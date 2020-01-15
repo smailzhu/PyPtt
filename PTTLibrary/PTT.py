@@ -1884,9 +1884,9 @@ class Library:
 
     def crawlBoard(
         self,
-        PostHandler,
         CrawlType: int,
         Board: str,
+        PostHandler,
         # BBS版本
         StartIndex: int = 0,
         EndIndex: int = 0,
