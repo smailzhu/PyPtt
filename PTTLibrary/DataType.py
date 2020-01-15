@@ -9,13 +9,11 @@ def ParseParameter(type, input):
         return None
     result = type(input)
     if isinstance(result, str):
-        result = result.encode(
-            "big5-uao", 'replace').decode("big5-uao", 'replace')
         result = result.rstrip()
     return result
 
 
-class CallStatus(object):
+class CallStatus:
     # 呼叫器狀態
 
     # 打開
@@ -33,9 +31,10 @@ class CallStatus(object):
     MaxValue = Off
 
 
-class PostSearchType(object):
+class PostSearchType:
     # 文章搜尋類型
 
+    Nope = 0
     # 搜尋關鍵字    / ?
     Keyword = 1
     # 搜尋作者      a
@@ -47,11 +46,11 @@ class PostSearchType(object):
     # 搜尋稿酬      A
     Money = 5
 
-    MinValue = Keyword
+    MinValue = Nope
     MaxValue = Money
 
 
-class WaterBallType(object):
+class WaterBallType:
     # 水球接收狀態
 
     # 收到水球
@@ -63,7 +62,7 @@ class WaterBallType(object):
     MaxValue = Send
 
 
-class WaterBallOperateType(object):
+class WaterBallOperateType:
     # 清除水球類型
 
     Clear = 1
@@ -74,7 +73,7 @@ class WaterBallOperateType(object):
     MaxValue = DoNothing
 
 
-class OperateType(object):
+class OperateType:
     # 操作類型
 
     Add = 1
@@ -85,7 +84,7 @@ class OperateType(object):
     MaxValue = Query
 
 
-class FriendListType(object):
+class FriendListType:
     # 名單類型
 
     GoodFriend = 1
@@ -98,7 +97,7 @@ class FriendListType(object):
     MaxValue = OtherSpecial
 
 
-class ReplyPostType(object):
+class ReplyType:
     # 回文類型
 
     Board = 1
@@ -109,7 +108,7 @@ class ReplyPostType(object):
     MaxValue = Board_Mail
 
 
-class PushType(object):
+class PushType:
     Push = 1
     Boo = 2
     Arrow = 3
@@ -118,7 +117,7 @@ class PushType(object):
     MaxValue = Arrow
 
 
-class MailInformation(object):
+class MailInformation:
     def __init__(self, Author, Title, Date, Content, IP, RawData):
         self._Author = ParseParameter(str, Author)
         self._Title = ParseParameter(str, Title)
@@ -146,7 +145,7 @@ class MailInformation(object):
         return self._RawData
 
 
-class UserInfo(object):
+class UserInfo:
     def __init__(
         self,
         ID,
@@ -212,7 +211,7 @@ class UserInfo(object):
         return self._SignatureFile
 
 
-class PushInfo(object):
+class PushInfo:
     def __init__(self, PushType, Author, PushContent, PushIP, PushTime):
         self._Type = ParseParameter(int, PushType)
         self._Author = ParseParameter(str, Author)
@@ -236,7 +235,7 @@ class PushInfo(object):
         return self._Time
 
 
-class PostDeleteStatus(object):
+class PostDeleteStatus:
     NotDeleted = 0
     ByAuthor = 1
     ByModerator = 2
@@ -246,7 +245,7 @@ class PostDeleteStatus(object):
     MaxValue = ByUnknow
 
 
-class PostInfo(object):
+class PostInfo:
     def __init__(
         self,
         Board=None,
@@ -261,7 +260,13 @@ class PostInfo(object):
         PushList=None,
         ListDate=None,
         DeleteStatus=0,
-        ControlCode=False
+        ControlCode=False,
+        FormatCheck=False,
+        Location=None,
+        PushNumber=None,
+        Lock=False,
+        OriginPost=None,
+        Unconfirmed=False
     ):
         self._Board = ParseParameter(str, Board)
         self._AID = ParseParameter(str, AID)
@@ -276,6 +281,12 @@ class PostInfo(object):
         self._DeleteStatus = DeleteStatus
         self._ListDate = ParseParameter(str, ListDate)
         self._ControlCode = ControlCode
+        self._FormatCheck = FormatCheck
+        self._Location = ParseParameter(str, Location)
+        self._PushNumber = ParseParameter(str, PushNumber)
+        self._Lock = Lock
+        self._OriginPost = ParseParameter(str, OriginPost)
+        self._Unconfirmed = ParseParameter(bool, Unconfirmed)
 
     def getBoard(self):
         return self._Board
@@ -316,8 +327,26 @@ class PostInfo(object):
     def hasControlCode(self):
         return self._ControlCode
 
+    def isFormatCheck(self):
+        return self._FormatCheck
 
-class WaterBallInfo(object):
+    def getLocation(self):
+        return self._Location
+
+    def getPushNumber(self):
+        return self._PushNumber
+
+    def isLock(self):
+        return self._Lock
+
+    def getOriginPost(self):
+        return self._OriginPost
+
+    def isUnconfirmed(self):
+        return self._Unconfirmed
+
+
+class WaterBallInfo:
     def __init__(self, Type, Target, Content, Date):
         self._Type = ParseParameter(int, Type)
         self._Target = ParseParameter(str, Target)
@@ -337,18 +366,185 @@ class WaterBallInfo(object):
         return self._Type
 
 
-class Cursor(object):
+class Cursor:
     # 舊式游標
     Old = '●'
     # 新式游標
     New = '>'
 
 
-class IndexType(object):
-    # 版
-    Board = 1
+class IndexType:
+    # 板
+    BBS = 1
     # 信箱
     Mail = 2
+    #
+    Web = 3
 
-    MinValue = Board
-    MaxValue = Mail
+    MinValue = BBS
+    MaxValue = Web
+
+
+class CrawlType:
+    # BBS版本
+    BBS = 1
+    # 網頁版本
+    Web = 2
+
+    MinValue = BBS
+    MaxValue = Web
+
+
+class Host:
+    # 批踢踢萬
+    PTT1 = 1
+    # 批踢踢兔
+    PTT2 = 2
+
+    MinValue = PTT1
+    MaxValue = PTT2
+
+
+class MarkType:
+    # s 文章
+    S = 1
+    # 標記文章
+    D = 2
+    # 刪除標記文章
+    DeleteD = 3
+    # M 起來
+    M = 4
+    # 待證實文章
+    Unconfirmed = 5
+
+    MinValue = S
+    MaxValue = Unconfirmed
+
+
+class FavouriteBoard:
+    def __init__(self, Board, Type, BoardTitle):
+        self.Board = ParseParameter(str, Board)
+        self.Type = ParseParameter(str, Type)
+        self.BoardTitle = ParseParameter(str, BoardTitle)
+
+    def getBoard(self):
+        return self.Board
+
+    def getType(self):
+        return self.Type
+
+    def getBoardTitle(self):
+        return self.BoardTitle
+
+
+class BoardInfo:
+    def __init__(
+        self,
+        Board,
+        OnlineUser,
+        ChineseDes=None,
+        Moderators=None,
+        OpenState=None,
+        IntoTopTenWhenHide=None,
+        NonBoardMembersPost=None,
+        ReplyPost=None,
+        SelfDelPost=None,
+        PushPost=None,
+        BooPost=None,
+        FastPush=None,
+        MinInterval=None,
+        PushRecordIP=None,
+        PushAligned=None,
+        ModeratorCanDelIllegalContent=None,
+        TranPostAutoRecordedAndRequirePostPermissions=None,
+        CoolMode=None,
+        Require18=None,
+        RequireLoginTime=None,
+        RequireIllegalPost=None,
+    ):
+        self.Board = ParseParameter(str, Board)
+        self.OnlineUser = ParseParameter(int, OnlineUser)
+        self.ChineseDes = ParseParameter(str, ChineseDes)
+        self.Moderators = ParseParameter(list, Moderators)
+        self.OpenState = ParseParameter(bool, OpenState)
+        self.IntoTopTenWhenHide = ParseParameter(bool, IntoTopTenWhenHide)
+        self.NonBoardMembersPost = ParseParameter(bool, NonBoardMembersPost)
+        self.ReplyPost = ParseParameter(bool, ReplyPost)
+        self.SelfDelPost = ParseParameter(bool, SelfDelPost)
+        self.PushPost = ParseParameter(bool, PushPost)
+        self.BooPost = ParseParameter(bool, BooPost)
+        self.FastPush = ParseParameter(bool, FastPush)
+        self.MinInterval = ParseParameter(int, MinInterval)
+        self.PushRecordIP = ParseParameter(bool, PushRecordIP)
+        self.PushAligned = ParseParameter(bool, PushAligned)
+        self.ModeratorCanDelIllegalContent = ParseParameter(
+            bool, ModeratorCanDelIllegalContent)
+        self.TranPostAutoRecordedAndRequirePostPermissions = ParseParameter(
+            bool, TranPostAutoRecordedAndRequirePostPermissions)
+        self.CoolMode = ParseParameter(bool, CoolMode)
+        self.Require18 = ParseParameter(bool, Require18)
+        self.RequireLoginTime = ParseParameter(int, RequireLoginTime)
+        self.RequireIllegalPost = ParseParameter(int, RequireIllegalPost)
+
+    def getBoard(self):
+        return self.Board
+
+    def getOnlineUser(self):
+        return self.OnlineUser
+
+    def getChineseDes(self):
+        return self.ChineseDes
+
+    def getModerators(self):
+        return self.Moderators
+
+    def isOpen(self):
+        return self.OpenState
+
+    def canIntoTopTenWhenHide(self):
+        return self.IntoTopTenWhenHide
+
+    def canNonBoardMembersPost(self):
+        return self.NonBoardMembersPost
+
+    def canReplyPost(self):
+        return self.ReplyPost
+
+    def canSelfDelPost(self):
+        return self.SelfDelPost
+
+    def canPushPost(self):
+        return self.PushPost
+
+    def canBooPost(self):
+        return self.BooPost
+
+    def canFastPush(self):
+        return self.FastPush
+
+    def getMinInterval(self):
+        return self.MinInterval
+
+    def isPushRecordIP(self):
+        return self.PushRecordIP
+
+    def isPushAligned(self):
+        return self.PushAligned
+
+    def canModeratorCanDelIllegalContent(self):
+        return self.ModeratorCanDelIllegalContent
+
+    def isTranPostAutoRecordedAndRequirePostPermissions(self):
+        return self.TranPostAutoRecordedAndRequirePostPermissions
+
+    def isCoolMode(self):
+        return self.CoolMode
+
+    def isRequire18(self):
+        return self.Require18
+
+    def getRequireLoginTime(self):
+        return self.RequireLoginTime
+
+    def getRequireIllegalPost(self):
+        return self.RequireIllegalPost

@@ -1,4 +1,4 @@
-from PTTLibrary import Config
+from PTTLibrary import Ver
 
 """A setuptools based setup module.
 
@@ -11,14 +11,14 @@ https://github.com/pypa/sampleproject
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
-from os import path
+# from os import path
 
 # here = path.abspath(path.dirname(__file__))
 
 # Get the long description from the README file
 # with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 #     long_description = f.read()
-Version = Config.Version
+Version = Ver.V
 # Arguments marked as "Required" below must be included for upload to PyPI.
 # Fields marked as "Optional" may be commented out.
 
@@ -47,7 +47,7 @@ setup(
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
-    description='PTT library github: https://github.com/Truth0906/PTTLibrary',  # Required
+    description='PTT library\ngithub: https://github.com/Truth0906/PTTLibrary',  # Required
 
     # This is an optional longer description of your project that represents
     # the body of text which users will see when they visit PyPI.
@@ -76,7 +76,7 @@ setup(
     # Classifiers help users find your project by categorizing it.
     #
     # For a list of valid classifiers, see
-    # https://pypi.python.org/pypi?%3Aaction=list_classifiers
+    # https://pypi.org/classifiers/
     classifiers=[  # Optional
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -85,7 +85,7 @@ setup(
         'Development Status :: 4 - Beta',
 
         'Operating System :: POSIX :: Linux',
-        'Operating System :: MacOS :: MacOS X'
+        'Operating System :: MacOS :: MacOS X',
         'Operating System :: Microsoft :: Windows :: Windows 10',
 
         # Indicate who your project is intended for
@@ -93,7 +93,7 @@ setup(
         'Topic :: Communications :: BBS',
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Internet',
-        'Topic :: Terminals :: Telnet'
+        'Topic :: Terminals :: Telnet',
         # Pick your license as you wish
         'License :: OSI Approved :: MIT License',
 
@@ -132,12 +132,14 @@ setup(
     install_requires=[
         'progressbar2',
         'websockets',
-        'uao'
-    ],  # Optional
+        'uao',
+        'beautifulsoup4',
+        'requests'
+    ],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
-    # syntax, for example:
+    # syntax, for example:0
     #
     #   $ pip install sampleproject[dev]
     #

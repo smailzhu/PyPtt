@@ -1,13 +1,8 @@
-from time import gmtime, strftime
 
 try:
-    import DataType
-    import Util
-    import Config
-except ModuleNotFoundError:
-    from . import DataType
     from . import Util
-    from . import Config
+except ModuleNotFoundError:
+    import Util
 
 
 class Language(object):
@@ -34,6 +29,13 @@ def SpecificLoad(inputLanguage, LangList):
     if inputLanguage not in LanguageList:
         raise ValueError('SpecificLoad Unknow language', inputLanguage)
     return LangList[LanguageList.index(inputLanguage)]
+
+
+def replace(String, *args):
+    for i in range(len(args)):
+        Target = args[i]
+        String = String.replace('{Target' + str(i) + '}', Target)
+    return String
 
 
 def load(inputLanguage):
@@ -92,6 +94,12 @@ def load(inputLanguage):
     PTT = SpecificLoad(inputLanguage, [
         '批踢踢',
         'PTT',
+    ])
+
+    global PTT2
+    PTT2 = SpecificLoad(inputLanguage, [
+        '批踢踢兔',
+        'PTT2',
     ])
 
     global Init
@@ -334,8 +342,8 @@ def load(inputLanguage):
         'Catch post',
     ])
 
-    global PostDeled
-    PostDeled = SpecificLoad(inputLanguage, [
+    global PostDeleted
+    PostDeleted = SpecificLoad(inputLanguage, [
         '文章已經被刪除',
         'Post has been deleted',
     ])
@@ -448,10 +456,10 @@ def load(inputLanguage):
         'Out Of Range',
     ])
 
-    global MustSmall
-    MustSmall = SpecificLoad(inputLanguage, [
-        '必須小於',
-        'Must Small than',
+    global MustSmallOrEqual
+    MustSmallOrEqual = SpecificLoad(inputLanguage, [
+        '必須小於等於',
+        'Must be less than or equal',
     ])
 
     global VotePost
@@ -609,6 +617,317 @@ def load(inputLanguage):
         '不修改紅包袋',
         'Constant the red bag',
     ])
+
+    global SendMail
+    SendMail = SpecificLoad(inputLanguage, [
+        '寄信',
+        'Send Mail',
+    ])
+
+    global Select
+    Select = SpecificLoad(inputLanguage, [
+        '選擇',
+        'Select',
+    ])
+
+    global SignatureFile
+    SignatureFile = SpecificLoad(inputLanguage, [
+        '簽名檔',
+        'Signature File',
+    ])
+
+    global NoSignatureFile
+    NoSignatureFile = SpecificLoad(inputLanguage, [
+        '不加簽名檔',
+        'No Signature File',
+    ])
+
+    global SelfSaveDraft
+    SelfSaveDraft = SpecificLoad(inputLanguage, [
+        '自存底稿',
+        'Self-Save Draft',
+    ])
+
+    global MailBox
+    MailBox = SpecificLoad(inputLanguage, [
+        '郵件選單',
+        'Mail Box',
+    ])
+
+    global NoSuchBoard
+    NoSuchBoard = SpecificLoad(inputLanguage, [
+        '無該板面',
+        'No Such Board',
+    ])
+
+    global HideSensitiveInfor
+    HideSensitiveInfor = SpecificLoad(inputLanguage, [
+        '隱藏敏感資訊',
+        'Hide Sensitive Information',
+    ])
+
+    global PostFormatError
+    PostFormatError = SpecificLoad(inputLanguage, [
+        '文章格式錯誤',
+        'Post Format Error',
+    ])
+
+    global LogHandler
+    LogHandler = SpecificLoad(inputLanguage, [
+        '紀錄額取器',
+        'Log Handler',
+    ])
+
+    global NewCursor
+    NewCursor = SpecificLoad(inputLanguage, [
+        '新式游標',
+        'New Type Cursor',
+    ])
+
+    global OldCursor
+    OldCursor = SpecificLoad(inputLanguage, [
+        '舊式游標',
+        'Old Type Cursor',
+    ])
+
+    global PostNoContent
+    PostNoContent = SpecificLoad(inputLanguage, [
+        '此文章無內容',
+        'Post has no content',
+    ])
+
+    global ConnectionClosed
+    ConnectionClosed = SpecificLoad(inputLanguage, [
+        '連線已經被關閉',
+        'Connection Closed',
+    ])
+
+    global BoardList
+    BoardList = SpecificLoad(inputLanguage, [
+        '看板列表',
+        'Board List',
+    ])
+
+    global UnregisteredUserCantUseAllAPI
+    UnregisteredUserCantUseAllAPI = SpecificLoad(inputLanguage, [
+        '未註冊使用者，將無法使用全部功能',
+        'Unregistered User Can\'t Use All API',
+    ])
+
+    global UnregisteredUserCantUseThisAPI
+    UnregisteredUserCantUseThisAPI = SpecificLoad(inputLanguage, [
+        '未註冊使用者，無法使用此功能',
+        'Unregistered User Can\'t Use This API',
+    ])
+
+    global MultiThreadOperate
+    MultiThreadOperate = SpecificLoad(inputLanguage, [
+        '請勿使用多線程同時操作一個 PTT Library 物件',
+        'Do not use a multi-thread to operate a PTT Library object',
+    ])
+
+    global HasNewMailGotoMainMenu
+    HasNewMailGotoMainMenu = SpecificLoad(inputLanguage, [
+        '有新信，回到主選單',
+        'Have a new letter, return to the main menu',
+    ])
+
+    global UseTooManyResources
+    UseTooManyResources = SpecificLoad(inputLanguage, [
+        '耗用太多資源',
+        'Use too many resources of PTT',
+    ])
+
+    global Host
+    Host = SpecificLoad(inputLanguage, [
+        '主機',
+        'Host',
+    ])
+
+    global PTT2NotSupport
+    PTT2NotSupport = SpecificLoad(inputLanguage, [
+        f'{PTT2}不支援',
+        f'{PTT2} Not Support',
+    ])
+
+    # Animation
+    global AnimationPost
+    AnimationPost = SpecificLoad(inputLanguage, [
+        '動畫文章',
+        'Animation Post',
+    ])
+
+    global RestoreConnection
+    RestoreConnection = SpecificLoad(inputLanguage, [
+        '恢復連線',
+        'Restore Connection',
+    ])
+
+    global NoPush
+    NoPush = SpecificLoad(inputLanguage, [
+        '禁止推薦',
+        'No Push',
+    ])
+
+    global NoResponse
+    NoResponse = SpecificLoad(inputLanguage, [
+        '很抱歉, 此文章已結案並標記, 不得回應',
+        'This Post has been closed and marked, no response',
+    ])
+
+    global ReplyBoard
+    ReplyBoard = SpecificLoad(inputLanguage, [
+        '回應至看板',
+        'Respond to the Board',
+    ])
+
+    global ReplyMail
+    ReplyMail = SpecificLoad(inputLanguage, [
+        '回應至作者信箱',
+        'Respond to the mailbox of author',
+    ])
+
+    global ReplyBoard_Mail
+    ReplyBoard_Mail = SpecificLoad(inputLanguage, [
+        '回應至看板與作者信箱',
+        'Respond to the Board and the mailbox of author',
+    ])
+
+    global UseTheOriginalTitle
+    UseTheOriginalTitle = SpecificLoad(inputLanguage, [
+        '採用原標題',
+        'Use the original title',
+    ])
+
+    global QuoteOriginal
+    QuoteOriginal = SpecificLoad(inputLanguage, [
+        '引用原文',
+        'Quote original',
+    ])
+
+    global EditPost
+    EditPost = SpecificLoad(inputLanguage, [
+        '編輯文章',
+        'Edit Post',
+    ])
+
+    global RespondSuccess
+    RespondSuccess = SpecificLoad(inputLanguage, [
+        '回應成功',
+        'Respond Success',
+    ])
+
+    global ForcedWrite
+    ForcedWrite = SpecificLoad(inputLanguage, [
+        '強制寫入',
+        'Forced Write',
+    ])
+
+    global NoPost
+    NoPost = SpecificLoad(inputLanguage, [
+        '沒有文章',
+        'No Post',
+    ])
+
+    global NeedModeratorPermission
+    NeedModeratorPermission = SpecificLoad(inputLanguage, [
+        '需要板主權限',
+        'Need Moderator Permission',
+    ])
+
+    global NewSettingsHaveBeenSaved
+    NewSettingsHaveBeenSaved = SpecificLoad(inputLanguage, [
+        '已儲存新設定',
+        'New settings have been saved',
+    ])
+
+    global NoChanges
+    NoChanges = SpecificLoad(inputLanguage, [
+        '未改變任何設定',
+        'No changes have been made to any settings',
+    ])
+
+    global Mark
+    Mark = SpecificLoad(inputLanguage, [
+        '標記',
+        'Mark',
+    ])
+
+    global DelAllMarkPost
+    DelAllMarkPost = SpecificLoad(inputLanguage, [
+        '刪除所有標記文章',
+        'Del All Mark Post',
+    ])
+
+    global NoSuchPost
+    NoSuchPost = SpecificLoad(inputLanguage, [
+        '{Target0} 板找不到這個文章代碼 {Target1}',
+        'In {Target0}, the post code is not exist {Target1}',
+    ])
+
+    global GoMainMenu
+    GoMainMenu = SpecificLoad(inputLanguage, [
+        '回到主選單',
+        'Back to main memu',
+    ])
+
+    global CanNotUseSearchPostCodeF
+    CanNotUseSearchPostCodeF = SpecificLoad(inputLanguage, [
+        '此狀態下無法使用搜尋文章代碼(AID)功能',
+        'This state can not use the search Post code function',
+    ])
+
+    global FavouriteBoardList
+    FavouriteBoardList = SpecificLoad(inputLanguage, [
+        '我的最愛',
+        'Favourite Board List',
+    ])
+
+    global bucket
+    bucket = SpecificLoad(inputLanguage, [
+        '水桶',
+        'Bucket',
+    ])
+
+    global UserHasPreviouslyBeenBanned
+    UserHasPreviouslyBeenBanned = SpecificLoad(inputLanguage, [
+        '使用者之前已被禁言',
+        'User has previously been banned',
+    ])
+
+    global InputBucketDays_Reason
+    InputBucketDays_Reason = SpecificLoad(inputLanguage, [
+        '輸入水桶天數與理由',
+        'Input bucket days and reason',
+    ])
+
+    global UnconfirmedPost
+    UnconfirmedPost = SpecificLoad(inputLanguage, [
+        '待證實文章',
+        'Post To Be Confirmed',
+    ])
+
+    global Reading
+    Reading = SpecificLoad(inputLanguage, [
+        '讀取中',
+        'Reading',
+    ])
+
+    global ReadComplete
+    ReadComplete = SpecificLoad(inputLanguage, [
+        f'讀取{Done}',
+        f'Read {Done}',
+    ])
+
+    global QuitUserProfile
+    QuitUserProfile = SpecificLoad(inputLanguage, [
+        f'退出使用者檔案',
+        f'Quit User Profile',
+    ])
+
+    # No changes have been made to any settings
+
+    # Quote original
 
     # global List
     # List = []

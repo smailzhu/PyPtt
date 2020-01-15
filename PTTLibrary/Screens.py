@@ -1,17 +1,13 @@
 import sys
 import re
 try:
-    import DataType
-    import Config
-    import Util
-    import i18n
-    import Log
-except ModuleNotFoundError:
-    from . import DataType
     from . import Config
     from . import Util
-    from . import i18n
     from . import Log
+except ModuleNotFoundError:
+    import Config
+    import Util
+    import Log
 
 
 class Target(object):
@@ -20,27 +16,41 @@ class Target(object):
         '[呼叫器]',
     ]
 
+    MainMenu_Exiting = [
+        '【主功能表】',
+        '您確定要離開',
+    ]
+
     QueryPost = [
         '請按任意鍵繼續',
         '───────┘',
     ]
 
     InBoard = [
-        '【板主',
+        '看板資訊/設定',
         '文章選讀',
         '相關主題'
     ]
 
+    InBoardWithCursor = [
+        '【',
+        '看板資訊/設定',
+    ]
+
+    # (h)說明 (←/q)離開
+    # (y)回應(X%)推文(h)說明(←)離開
+    # (y)回應(X/%)推文 (←)離開
+
     InPost = [
         '瀏覽',
         '頁',
-        '回應'
+        ')離開'
     ]
 
     PostEnd = [
         '瀏覽',
         '頁 (100%)',
-        '回應'
+        ')離開'
     ]
 
     InWaterBallList = [
@@ -64,8 +74,11 @@ class Target(object):
     ]
 
     Edit = [
-        '※ 編輯',
-        '來自:'
+        '※ 編輯'
+    ]
+
+    PostURL = [
+        '※ 文章網址'
     ]
 
     Vote_Type1 = [
@@ -92,6 +105,30 @@ class Target(object):
         '休閒聊天',
         '聊天/寫信',
         '說明',
+    ]
+
+    InMailBox = [
+        '【郵件選單】',
+        '鴻雁往返'
+    ]
+
+    PostNoContent = [
+        '◆ 此文章無內容',
+        AnyKey
+    ]
+
+    InBoardList = [
+        '【看板列表】',
+        '選擇看板',
+        '已讀/未讀',
+    ]
+
+    UseTooManyResources = [
+        '程式耗用過多計算資源'
+    ]
+
+    Animation = [
+        '★ 這份文件是可播放的文字動畫，要開始播放嗎？'
     ]
 
 
@@ -145,18 +182,42 @@ def VT100(OriScreen: str, NoColor: bool = True):
 
     result = re.sub(r'[\x1B]', '=PTT=', result)
 
+    # print('=Start=' * 20)
+    # print(result)
+    # print('=End=' * 20)
+
     # result = '\n'.join(
     #     [x.rstrip() for x in result.split('\n')]
     # )
-    while '=PTT=[H' in result:
-        result = result[result.find('=PTT=[H') + len('=PTT=[H'):]
+
+    # while '=PTT=[H' in result:
+    #     result = result[result.find('=PTT=[H') + len('=PTT=[H'):]
     while '=PTT=[2J' in result:
         result = result[result.find('=PTT=[2J') + len('=PTT=[2J'):]
-    #
+
+    PatternResult = re.compile('=PTT=\[(\d+);(\d+)H$').search(result)
+    LastPosition = None
+    if PatternResult is not None:
+        # print(f'Before [{PatternResult.group(0)}]')
+        LastPosition = PatternResult.group(0)
+
+    # 進入 PTT 時，有時候會連分類看版一起傳過來然後再用主功能表畫面直接繪製畫面
+    # 沒有[H 或者 [2J 導致後面的繪製行數錯誤
+
+    if '=PTT=[1;3H主功能表' in result:
+        result = result[result.find('=PTT=[1;3H主功能表') + len('=PTT=[1;3H主功能表'):]
+
+    # if '=PTT=[1;' in result:
+    #     if LastPosition is None:
+    #         result = result[result.rfind('=PTT=[1;'):]
+    #     elif not LastPosition.startswith('=PTT=[1;'):
+    #         result = result[result.rfind('=PTT=[1;'):]
+
     # print('-'*50)
     # print(result)
     ResultList = re.findall('=PTT=\[(\d+);(\d+)H', result)
     for (Line, Space) in ResultList:
+        # print(f'>{Line}={Space}<')
         Line = int(Line)
         Space = int(Space)
         CurrentLine = result[
@@ -164,26 +225,70 @@ def VT100(OriScreen: str, NoColor: bool = True):
                 f'[{Line};{Space}H'
             )
         ].count('\n') + 1
-        CurrentSpace = result[
-            :result.find(
-                f'=PTT=[{Line};{Space}H'
-            )
-        ]
-        CurrentSpace = CurrentSpace[
-            CurrentSpace.rfind('\n') + 1:
-        ]
-        CurrentSpace = len(CurrentSpace)
-        # if '有的警察可能會說' in result:
-        #     print('='*50)
-        #     print(result)
-        #     print(f'>{CurrentSpace}<')
-        # print(Line, Space)
-        # print(CurrentLine)
-        # print(CurrentSpace)
-        if CurrentLine > Line:
-            continue
 
-        if CurrentLine == Line:
+        if CurrentLine > Line:
+            # if LastPosition is None:
+            #     pass
+            # elif LastPosition != f'=PTT=[{Line};{Space}H':
+            #     print(f'CurrentLine [{CurrentLine}]')
+            #     print(f'Line [{Line}]')
+            #     print('Clear !!!')
+            # print(f'!!!!!!!!=PTT=[{Line};{Space}H')
+
+            ResultLines = result.split('\n')
+            TargetLine = ResultLines[Line - 1]
+            if f'=PTT=[{Line};{Space}H=PTT=[K' in result:
+                # 如果有 K 則把該行座標之後，全部抹除
+                TargetLine = TargetLine[:Space - 1]
+
+                # OriginIndex = -1
+                OriginLine = None
+                for i, line in enumerate(ResultLines):
+                    if f'=PTT=[{Line};{Space}H=PTT=[K' in line:
+                        # OriginIndex = i
+                        OriginLine = line
+                        break
+
+                if OriginLine.count('=PTT=') > 2:
+                    OriginLine = OriginLine[
+                        :Util.findnth(OriginLine, '=PTT=', 3)
+                    ]
+
+                # ResultLines[OriginIndex] = ResultLines[OriginIndex].replace(
+                #     OriginLine,
+                #     ''
+                # )
+
+                OriginLine = OriginLine[
+                    len(f'=PTT=[{Line};{Space}H=PTT=[K'):
+                ]
+
+                # Log.showValue(
+                #     Log.Level.INFO,
+                #     'OriginLine',
+                #     OriginLine
+                # )
+
+                NewTargetLine = f'{TargetLine}{OriginLine}'
+                ResultLines[Line - 1] = NewTargetLine
+            result = '\n'.join(ResultLines)
+        elif CurrentLine == Line:
+            # print(f'!!!!!=PTT=[{Line};{Space}H')
+            CurrentSpace = result[
+                :result.find(
+                    f'=PTT=[{Line};{Space}H'
+                )
+            ]
+            CurrentSpace = CurrentSpace[
+                CurrentSpace.rfind('\n') + 1:
+            ]
+            # Log.showValue(
+            #     Log.Level.INFO,
+            #     'CurrentSpace',
+            #     CurrentSpace
+            # )
+            CurrentSpace = len(CurrentSpace.encode('big5', 'replace'))
+            # print(f'!!!!!{CurrentSpace}')
             if CurrentSpace > Space:
                 result = result.replace(
                     f'=PTT=[{Line};{Space}H',
@@ -200,19 +305,34 @@ def VT100(OriScreen: str, NoColor: bool = True):
                 (Line - CurrentLine) * '\n' + Space * ' '
             )
 
-    while '=PTT=[K' in result:
-        Target = result[result.find('=PTT=[K'):]
-        index1 = Target.find('\n')
-        index2 = Target.find('=PTT=')
-        if index2 == 0:
-            index = index1
-        else:
-            index = min(index1, index2)
-        Target = Target[:index]
+    # while '=PTT=[K' in result:
+    #     Target = result[result.find('=PTT=[K'):]
 
-        result = result.replace(Target, '')
+    #     print(f'Target[{Target}]')
 
+    #     index1 = Target.find('\n')
+    #     index2 = Target.find('=PTT=')
+    #     if index2 == 0:
+    #         index = index1
+    #     else:
+    #         index = min(index1, index2)
+
+    #     break
+    #     Target = Target[:index]
+    #     print('===' * 20)
+    #     print(result)
+    #     print('-=-' * 20)
+    #     print(Target)
+    #     print('===' * 20)
+    #     result = result.replace(Target, '')
+
+    # print(Target)
+    # print('===' * 20)
+
+    if LastPosition is not None:
+        result = result.replace(LastPosition, '')
+
+    # print('-Final-' * 20)
     # print(result)
-    # print('=' * 50)
-
+    # print('-Final-' * 20)
     return result

@@ -1,15 +1,18 @@
 import sys
-from time import gmtime, strftime
+from time import strftime
+
 try:
-    import DataType
-    import Config
-    import Util
-    import i18n
-except ModuleNotFoundError:
-    from . import DataType
     from . import Config
     from . import Util
     from . import i18n
+except ModuleNotFoundError:
+    import Config
+    import Util
+    import i18n
+
+
+# Log Handler
+Handler = None
 
 
 class Level(object):
@@ -27,12 +30,14 @@ def merge(Msg) -> str:
     if isinstance(Msg, list):
         if Config.Language == i18n.Language.Chinese:
 
-            for i in range(len(Msg)):
-                if Msg[i][0].upper() != Msg[i][0].lower() and i != 0:
-                    Msg[i] = ' ' + Msg[i].lstrip()
-                if (Msg[i][-1].upper() != Msg[i][-1].lower() and
+            for i, element in enumerate(Msg):
+                if len(element) == 0:
+                    continue
+                if element[0].upper() != element[0].lower() and i != 0:
+                    Msg[i] = ' ' + element.lstrip()
+                if (element[-1].upper() != element[-1].lower() and
                         i != len(Msg) - 1):
-                    Msg[i] = Msg[i].rstrip() + ' '
+                    Msg[i] = element.lstrip() + ' '
 
             Msg = ''.join(Msg)
         else:
@@ -70,6 +75,10 @@ def log(LogLevel, Msg):
     except Exception:
         print(TotalMessage.encode('utf-8', "replace").decode('utf-8'))
 
+    global Handler
+    if Handler is not None:
+        Handler(TotalMessage)
+
 
 LastValue = None
 
@@ -81,15 +90,16 @@ def showValue(LogLevel, Msg, Value):
 
     if Config.LogLevel > LogLevel:
         return
-    if len(Msg) == 0:
-        return
-    if len(Value) == 0:
-        return
     global LastValue
 
     CheckPTTMsg = merge([i18n.PTT, i18n.Msg])
     Msg = merge(Msg)
     Value = merge(Value)
+
+    if len(Msg) == 0:
+        return
+    # if len(Value) == 0:
+    #     return
 
     if CheckPTTMsg == Msg and Value == LastValue:
         return

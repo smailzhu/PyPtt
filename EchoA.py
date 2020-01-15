@@ -9,7 +9,7 @@ from PTTLibrary import PTT
 
 def getPW():
     try:
-        with open('Account2.txt') as AccountFile:
+        with open('Account.txt') as AccountFile:
             Account = json.load(AccountFile)
             ID = Account['ID']
             Password = Account['Password']
@@ -21,19 +21,26 @@ def getPW():
     return ID, Password
 
 
-def Echo():
+def SendEcho():
 
     OperateType = PTT.WaterBallOperateType.Clear
     WaterBallList = PTTBot.getWaterBall(OperateType)
 
-    TestWaterBall = [str(x % 10) for x in range(10)]
-    TagetID = 'DeepLearning'
-
     while True:
-        WaterBallList = PTTBot.getWaterBall(OperateType)
-        if WaterBallList is None:
+        try:
+            PTTBot.throwWaterBall('DeepLearning', 'Hey')
+        except PTT.Exceptions.UserOffline:
             time.sleep(1)
             continue
+        break
+
+    while True:
+        PTTBot.setCallStatus(PTT.CallStatus.Off)
+        time.sleep(1)
+        WaterBallList = PTTBot.getWaterBall(OperateType)
+        if WaterBallList is None:
+            continue
+
         for WaterBall in WaterBallList:
             if not WaterBall.getType() == PTT.WaterBallType.Catch:
                 continue
@@ -41,7 +48,15 @@ def Echo():
             Target = WaterBall.getTarget()
             Content = WaterBall.getContent()
 
-            PTTBot.throwWaterBall(Target, 'Echo: ' + Content)
+            print(f'收到來自 {Target} 的水球 [{Content}]')
+
+            while True:
+                try:
+                    PTTBot.throwWaterBall(Target, 'Hey')
+                except PTT.Exceptions.UserOffline:
+                    time.sleep(1)
+                    continue
+                break
 
 
 if __name__ == '__main__':
@@ -52,11 +67,7 @@ if __name__ == '__main__':
 
     try:
 
-        PTTBot = PTT.Library(
-            ConnectMode=PTT.ConnectMode.WebSocket,
-            # LogLevel=PTT.LogLevel.TRACE,
-            LogLevel=PTT.LogLevel.DEBUG,
-        )
+        PTTBot = PTT.Library()
         try:
             PTTBot.login(
                 ID,
@@ -67,7 +78,7 @@ if __name__ == '__main__':
             PTTBot.log('登入失敗')
             sys.exit()
 
-        Echo()
+        SendEcho()
     except Exception as e:
 
         traceback.print_tb(e.__traceback__)

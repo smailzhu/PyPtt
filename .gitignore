@@ -10,3 +10,6 @@ PTTLibrary-*/
 /PTTLibrary/i18n.txt
 /Test.txt
 Account*.txt
+*.spec
+/LogHandler.txt
+.vscode
