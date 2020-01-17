@@ -33,10 +33,6 @@ def Init():
     PTT.Library(Language=PTT.Language.Chinese)
     print('===英文顯示===')
     PTT.Library(Language=PTT.Language.English)
-    print('===Telnet===')
-    PTT.Library(ConnectMode=PTT.ConnectMode.Telnet)
-    print('===WebSocket===')
-    PTT.Library(ConnectMode=PTT.ConnectMode.WebSocket)
     print('===Log DEBUG===')
     PTT.Library(LogLevel=PTT.LogLevel.DEBUG)
     print('===Log INFO===')
@@ -53,7 +49,7 @@ def Init():
         print('通過')
     except:
         print('沒通過')
-        return
+        sys.exit(-1)
     print('===語言放字串===')
     try:
         PTT.Library(Language='PTT.Language.English')
@@ -61,7 +57,7 @@ def Init():
         print('通過')
     except:
         print('沒通過')
-        return
+        sys.exit(-1)
     # print('===Telnet===')
     # PTT.Library(ConnectMode=PTT.ConnectMode.Telnet)
     # print('===WebSocket===')
@@ -80,7 +76,6 @@ def Loginout():
     print('WebSocket 登入登出測試')
 
     PTTBot = PTT.Library(
-        ConnectMode=PTT.ConnectMode.WebSocket,
         LogLevel=PTT.LogLevel.DEBUG
     )
     try:
@@ -90,7 +85,7 @@ def Loginout():
                      )
     except PTT.Exceptions.LoginError:
         PTTBot.log('登入失敗')
-        sys.exit()
+        sys.exit(-1)
     PTTBot.log('登入成功')
     PTTBot.logout()
     PTTBot.log('登出成功')
@@ -178,13 +173,13 @@ def GetPost():
         # ('Stock', '1TVnEivO'),
         # 文章格式錯誤
         # ('movie', 457),
-        # ('Gossiping', '1TU65Wi_'),
+        ('Gossiping', '1TU65Wi_'),
         # ('Gossiping', '1TWadtnq'),
         # ('Gossiping', '1TZBBkWP'),
         # ('joke', '1Tc6G9eQ'),
         # ('Test', 575),
         # 待證文章
-        ('Test', '1U3pLzi0'),
+        # ('Test', '1U3pLzi0'),
 
         # PTT2
         # ('PttSuggest', 1),
@@ -357,47 +352,41 @@ def GetPostWithCondition():
     Query = False
 
     for (Board, SearchType, Condition) in TestList:
-        try:
-            showCondition(Board, SearchType, Condition)
-            Index = PTTBot.getNewestIndex(
-                PTT.IndexType.BBS,
+        showCondition(Board, SearchType, Condition)
+        Index = PTTBot.getNewestIndex(
+            PTT.IndexType.BBS,
+            Board,
+            SearchType=SearchType,
+            SearchCondition=Condition,
+        )
+        print(f'{Board} 最新文章編號 {Index}')
+
+        for i in range(TestRange):
+            Post = PTTBot.getPost(
                 Board,
+                PostIndex=Index - i,
+                # PostIndex=611,
                 SearchType=SearchType,
                 SearchCondition=Condition,
+                Query=Query
             )
-            print(f'{Board} 最新文章編號 {Index}')
 
-            for i in range(TestRange):
-                Post = PTTBot.getPost(
-                    Board,
-                    PostIndex=Index - i,
-                    # PostIndex=611,
-                    SearchType=SearchType,
-                    SearchCondition=Condition,
-                    Query=Query
-                )
+            print('列表日期:')
+            print(Post.getListDate())
+            print('作者:')
+            print(Post.getAuthor())
+            print('標題:')
+            print(Post.getTitle())
 
-                print('列表日期:')
-                print(Post.getListDate())
-                print('作者:')
-                print(Post.getAuthor())
-                print('標題:')
-                print(Post.getTitle())
-
-                if Post.getDeleteStatus() == PTT.PostDeleteStatus.NotDeleted:
-                    if not Query:
-                        print('內文:')
-                        print(Post.getContent())
-                elif Post.getDeleteStatus() == PTT.PostDeleteStatus.ByAuthor:
-                    print('文章被作者刪除')
-                elif Post.getDeleteStatus() == PTT.PostDeleteStatus.ByModerator:
-                    print('文章被版主刪除')
-                print('=' * 50)
-
-        except Exception as e:
-
-            traceback.print_tb(e.__traceback__)
-            print(e)
+            if Post.getDeleteStatus() == PTT.PostDeleteStatus.NotDeleted:
+                if not Query:
+                    print('內文:')
+                    print(Post.getContent())
+            elif Post.getDeleteStatus() == PTT.PostDeleteStatus.ByAuthor:
+                print('文章被作者刪除')
+            elif Post.getDeleteStatus() == PTT.PostDeleteStatus.ByModerator:
+                print('文章被版主刪除')
+            print('=' * 50)
 
     # TestList = [
     #     ('Python', PTT.PostSearchType.Keyword, '[公告]')
@@ -729,18 +718,25 @@ def Push():
 
     TestPostList = [
         # ('Gossiping', 95693),
-        ('Test', 804),
+        # ('Test', 'QQQQQQ'),
+        ('Test', '1U8Li2Uj'),
         # ('Wanted', '1Teyovc3')
     ]
 
     Content = '''
 推文測試
 '''
-    for (Board, Index) in TestPostList:
-        if isinstance(Index, int):
-            PTTBot.push(Board, PTT.PushType.Push, Content, PostIndex=Index)
-        else:
-            PTTBot.push(Board, PTT.PushType.Push, Content, PostAID=Index)
+    # for (Board, Index) in TestPostList:
+    #     if isinstance(Index, int):
+    #         PTTBot.push(Board, PTT.PushType.Push, Content, PostIndex=Index)
+    #     else:
+    #         PTTBot.push(Board, PTT.PushType.Push, Content, PostAID=Index)
+
+    Index = PTTBot.getNewestIndex(
+        PTT.IndexType.BBS,
+        Board='Test'
+    )
+    PTTBot.push('Test', PTT.PushType.Push, Content, PostIndex=Index + 1)
 
 
 def ThrowWaterBall():
@@ -1189,24 +1185,30 @@ def SearchUser():
 
 
 if __name__ == '__main__':
-    os.system('cls')
     print('Welcome to PTT Library v ' + PTT.Version + ' test case')
 
+    RunCI = False
+    TravisCI = False
     if len(sys.argv) == 2:
         if sys.argv[1] == '-ci':
-            print('CI test run success!!')
-            sys.exit()
+            RunCI = True
+            ID = os.getenv('PTTLibrary_ID')
+            Password = os.getenv('PTTLibrary_Password')
+            if ID is None or Password is None:
+                os.system('cls')
+                print('從環境變數取得帳號密碼失敗')
+                ID, Password = getPW()
+                TravisCI = False
+            else:
+                TravisCI = True
+    else:
+        os.system('cls')
+        ID, Password = getPW()
 
-    ID, Password = getPW()
-
-    try:
-        # Loginout()
-        # ThreadingTest()
-
+    if RunCI:
+        Init()
         PTTBot = PTT.Library(
             # LogLevel=PTT.LogLevel.TRACE,
-            # LogLevel=PTT.LogLevel.DEBUG,
-            # Host=PTT.Host.PTT2
         )
         try:
             PTTBot.login(
@@ -1217,43 +1219,342 @@ if __name__ == '__main__':
             pass
         except PTT.Exceptions.LoginError:
             PTTBot.log('登入失敗')
-            sys.exit()
+            sys.exit(1)
+        # 基準測試
 
-        # PerformanceTest()
+        def showTestResult(board, IndexAID, result):
+            if result:
+                if isinstance(IndexAID, int):
+                    print(f'{board} index {IndexAID} 測試通過')
+                else:
+                    print(f'{board} AID {IndexAID} 測試通過')
+            else:
+                if isinstance(IndexAID, int):
+                    print(f'{board} index {IndexAID} 測試失敗')
+                else:
+                    print(f'{board} AID {IndexAID} 測試失敗')
+                    PTTBot.logout()
+                    sys.exit(1)
 
-        # GetPost()
-        # GetPostWithCondition()
-        # Post()
-        # GetNewestIndex()
-        # CrawlBoard()
-        # CrawlBoardWithCondition()
-        # Push()
-        # GetUser()
-        # ThrowWaterBall()
-        # GetWaterBall()
-        # WaterBall()
-        # CallStatus()
-        # GiveMoney()
-        # Mail()
-        # HasNewMail()
-        # GetBoardList()
-        # GetBoardInfo()
-        # ReplyPost()
-        # GetFavouriteBoard()
-        # SearchUser()
+        def GetPostTestFunc(board, IndexAID, targetEx, checkformat, checkStr):
+            try:
+                if isinstance(IndexAID, int):
+                    Post = PTTBot.getPost(
+                        board,
+                        PostIndex=IndexAID,
+                    )
+                else:
+                    Post = PTTBot.getPost(
+                        board,
+                        PostAID=IndexAID,
+                    )
+            except Exception as e:
+                if targetEx is not None and isinstance(e, targetEx):
+                    showTestResult(board, IndexAID, True)
+                    return
+                showTestResult(board, IndexAID, False)
 
-        # Bucket()
-        # SetBoardTitle()
-        # MarkPost()
+                traceback.print_tb(e.__traceback__)
+                print(e)
+                sys.exit(1)
 
-        # private test
-        # getPostIndexTest()
+            if checkStr is None and targetEx is None and not checkformat:
+                print(Post.getContent())
 
-        # FullTest()
-    except Exception as e:
-        traceback.print_tb(e.__traceback__)
-        print(e)
-    except KeyboardInterrupt:
-        pass
+            if checkformat and not Post.isFormatCheck():
+                showTestResult(board, IndexAID, True)
+                return
 
-    PTTBot.logout()
+            if checkStr is not None and checkStr not in Post.getContent():
+                sys.exit(1)
+
+            if isinstance(IndexAID, int):
+                print(f'{board} index {IndexAID} 測試通過')
+            else:
+                print(f'{board} AID {IndexAID} 測試通過')
+
+        try:
+
+            TestPostList = [
+                ('Python', 1, None, False, '總算可以來想想板的走向了..XD'),
+                ('NotExitBoard', 1, PTT.Exceptions.NoSuchBoard, False, None),
+                ('Python', '1TJH_XY0', None, False, '大家嗨，我是 CodingMan'),
+                # 文章格式錯誤
+                ('Steam', 4444, None, True, None),
+                # 文章格式錯誤
+                ('movie', 457, None, True, None),
+                ('Gossiping', '1TU65Wi_', None, False, None),
+                ('joke', '1Tc6G9eQ', None, False, None),
+                # 待證文章
+                ('Test', '1U3pLzi0', None, False, None),
+            ]
+
+            for b, i, ex, checkformat, c in TestPostList:
+                GetPostTestFunc(b, i, ex, checkformat, c)
+
+            print('取得文章測試全部通過')
+
+            TestBoardList = [
+                'Wanted',
+                'Gossiping',
+                'Test',
+                'Stock',
+                'movie'
+            ]
+
+            for Board in TestBoardList:
+                BasicIndex = 0
+                for _ in range(100):
+                    Index = PTTBot.getNewestIndex(
+                        PTT.IndexType.BBS,
+                        Board=Board
+                    )
+
+                    if BasicIndex == 0:
+                        print(f'{Board} 最新文章編號 {Index}')
+                        BasicIndex = Index
+                    elif abs(BasicIndex - Index) > 5:
+                        print(f'{Board} 最新文章編號 {Index}')
+                        print(f'BasicIndex {BasicIndex}')
+                        print(f'Index {Index}')
+                        print('取得看板最新文章編號測試失敗')
+                        sys.exit(1)
+            print('取得看板最新文章編號測試全部通過')
+
+            Title = 'PTT Library 程式貼文基準測試標題'
+            Content = f'''
+PTT Library v {PTTBot.getVersion()}
+
+PTT Library 程式貼文基準測試內文
+
+この日本のベンチマーク
+'''
+            if TravisCI:
+                Content = '''
+此次測試由 Travis CI 啟動
+''' + Content
+            else:
+                Content = f'''
+此次測試由 {ID} 啟動
+''' + Content
+            Content = Content.replace('\n', '\r\n')
+
+            Board = 'Test'
+            PTTBot.post(
+                Board,
+                Title,
+                Content,
+                1,
+                1
+            )
+
+            Index = PTTBot.getNewestIndex(
+                PTT.IndexType.BBS,
+                Board=Board
+            )
+
+            BasicPostAID = None
+            BasicPostIndex = 0
+            for i in range(5):
+
+                Post = PTTBot.getPost(
+                    Board,
+                    PostIndex=Index - i,
+                )
+
+                if ID in Post.getAuthor() and 'PTT Library 程式貼文基準測試內文' in Post.getContent() and\
+                   Title in Post.getTitle():
+                    print('使用文章編號取得基準文章成功')
+                    Post = PTTBot.getPost(
+                        Board,
+                        PostAID=Post.getAID(),
+                    )
+                    if ID in Post.getAuthor() and 'PTT Library 程式貼文基準測試內文' in Post.getContent() and\
+                       Title in Post.getTitle():
+                        print('使用文章代碼取得基準文章成功')
+                        BasicPostAID = Post.getAID()
+                        BasicPostIndex = Index - i
+                        break
+
+            if BasicPostAID is None:
+                print('取得基準文章失敗')
+                sys.exit(1)
+            print('取得基準文章成功')
+            print('貼文測試全部通過')
+
+            try:
+                Content1 = '編號推文基準文字123'
+                PTTBot.push(Board, PTT.PushType.Push,
+                            Content1, PostAID='QQQQQQQ')
+            except PTT.Exceptions.NoSuchPost:
+                print('推文反向測試通過')
+
+            try:
+                Index = PTTBot.getNewestIndex(
+                    PTT.IndexType.BBS,
+                    Board=Board
+                )
+                Content1 = '編號推文基準文字123'
+                PTTBot.push(Board, PTT.PushType.Push,
+                            Content1, PostIndex=Index + 1)
+            except ValueError:
+                print('推文反向測試通過')
+
+            Content1 = '編號推文基準文字123'
+            PTTBot.push(Board, PTT.PushType.Push,
+                        Content1, PostIndex=BasicPostIndex)
+
+            Content2 = '代碼推文基準文字123'
+            PTTBot.push(Board, PTT.PushType.Push,
+                        Content2, PostAID=BasicPostAID)
+
+            Post = PTTBot.getPost(
+                Board,
+                PostAID=Post.getAID(),
+            )
+
+            Content1Check = False
+            Content2Check = False
+            for push in Post.getPushList():
+                if Content1 in push.getContent():
+                    Content1Check = True
+                if Content2 in push.getContent():
+                    Content2Check = True
+
+            if not Content1Check:
+                print('編號推文基準測試失敗')
+                sys.exit(1)
+            print('編號推文基準測試成功')
+            if not Content2Check:
+                print('代碼推文基準測試失敗')
+                sys.exit(1)
+            print('代碼推文基準測試成功')
+
+            Content = '推文基準測試全部通過'
+            PTTBot.push(Board, PTT.PushType.Arrow,
+                        Content, PostAID=BasicPostAID)
+
+            TestList = [
+                ('Python', PTT.PostSearchType.Keyword, '[公告]'),
+                ('ALLPOST', PTT.PostSearchType.Keyword, '(Wanted)'),
+                ('Wanted', PTT.PostSearchType.Keyword, '(本文已被刪除)'),
+                ('ALLPOST', PTT.PostSearchType.Keyword, '(Gossiping)'),
+                ('Gossiping', PTT.PostSearchType.Keyword, '普悠瑪'),
+            ]
+
+            TestRange = 1
+
+            for (Board, SearchType, Condition) in TestList:
+                showCondition(Board, SearchType, Condition)
+                Index = PTTBot.getNewestIndex(
+                    PTT.IndexType.BBS,
+                    Board,
+                    SearchType=SearchType,
+                    SearchCondition=Condition,
+                )
+                print(f'{Board} 最新文章編號 {Index}')
+
+                for i in range(TestRange):
+                    Post = PTTBot.getPost(
+                        Board,
+                        PostIndex=Index - i,
+                        SearchType=SearchType,
+                        SearchCondition=Condition,
+                        Query=False
+                    )
+
+                    print('列表日期:')
+                    print(Post.getListDate())
+                    print('作者:')
+                    print(Post.getAuthor())
+                    print('標題:')
+                    print(Post.getTitle())
+
+                    if Post.getDeleteStatus() == PTT.PostDeleteStatus.NotDeleted:
+                        if not Query:
+                            print('內文:')
+                            print(Post.getContent())
+                    elif Post.getDeleteStatus() == PTT.PostDeleteStatus.ByAuthor:
+                        print('文章被作者刪除')
+                    elif Post.getDeleteStatus() == PTT.PostDeleteStatus.ByModerator:
+                        print('文章被版主刪除')
+                    print('=' * 50)
+
+            Board = 'Test'
+
+            Content = '取得文章測試全部通過'
+            PTTBot.push(Board, PTT.PushType.Arrow,
+                        Content, PostAID=BasicPostAID)
+
+            Content = '貼文測試全部通過'
+            PTTBot.push(Board, PTT.PushType.Arrow,
+                        Content, PostAID=BasicPostAID)
+
+            Content = '自動化測試全部完成'
+            PTTBot.push(Board, PTT.PushType.Arrow,
+                        Content, PostAID=BasicPostAID)
+
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
+            print(e)
+        except KeyboardInterrupt:
+            pass
+
+        PTTBot.logout()
+    else:
+        try:
+            # Loginout()
+            # ThreadingTest()
+            PTTBot = PTT.Library(
+                # LogLevel=PTT.LogLevel.TRACE,
+                # LogLevel=PTT.LogLevel.DEBUG,
+                # Host=PTT.Host.PTT2
+            )
+            try:
+                PTTBot.login(
+                    ID,
+                    Password,
+                    # KickOtherLogin=True
+                )
+                pass
+            except PTT.Exceptions.LoginError:
+                PTTBot.log('登入失敗')
+                sys.exit()
+
+            # PerformanceTest()
+
+            # GetPost()
+            # GetPostWithCondition()
+            # Post()
+            # GetNewestIndex()
+            # CrawlBoard()
+            # CrawlBoardWithCondition()
+            # Push()
+            # GetUser()
+            # ThrowWaterBall()
+            # GetWaterBall()
+            # WaterBall()
+            # CallStatus()
+            # GiveMoney()
+            # Mail()
+            # HasNewMail()
+            # GetBoardList()
+            # GetBoardInfo()
+            # ReplyPost()
+            # GetFavouriteBoard()
+            # SearchUser()
+
+            # Bucket()
+            # SetBoardTitle()
+            # MarkPost()
+
+            # private test
+            # getPostIndexTest()
+            # FullTest()
+        except Exception as e:
+            traceback.print_tb(e.__traceback__)
+            print(e)
+        except KeyboardInterrupt:
+            pass
+
+        PTTBot.logout()
