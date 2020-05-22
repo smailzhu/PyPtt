@@ -16,7 +16,7 @@ def get_password(password_file):
             ptt_id = account['ID']
             password = account['Password']
     except FileNotFoundError:
-        print('Please note PTT ID and Password in Account.txt')
+        print(f'Please note PTT ID and Password in {password_file}')
         print('{"ID":"YourID", "Password":"YourPassword"}')
         sys.exit()
 
@@ -32,11 +32,11 @@ def init():
     print('===英文顯示===')
     PTT.API(language=PTT.i18n.language.ENGLISH)
     print('===log DEBUG===')
-    PTT.API(log_level=PTT.log.Level.DEBUG)
+    PTT.API(log_level=PTT.log.level.DEBUG)
     print('===log INFO===')
-    PTT.API(log_level=PTT.log.Level.INFO)
+    PTT.API(log_level=PTT.log.level.INFO)
     print('===log SLIENT===')
-    PTT.API(log_level=PTT.log.Level.SILENT)
+    PTT.API(log_level=PTT.log.level.SILENT)
     print('===log SLIENT======')
 
     print('===負向===')
@@ -89,7 +89,6 @@ def performance_test():
 
 
 def get_post():
-
     if ptt_bot.config.host == PTT.data_type.host_type.PTT1:
         test_post_list = [
             ('Python', 1),
@@ -284,7 +283,6 @@ def get_post_with_condition():
             ('PttSuggest', PTT.data_type.post_search_type.PUSH, '10'),
         ]
 
-
     test_range = 1
     query = False
 
@@ -394,6 +392,9 @@ def get_newest_index():
         for _ in range(100):
             index = ptt_bot.get_newest_index(PTT.data_type.index_type.BBS, board=board)
             print(f'{board} 最新文章編號 {index}')
+
+    index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+    print(f'最新郵件編號 {index}')
 
 
 def showValue(Msg, Value):
@@ -671,8 +672,8 @@ def push():
         # ('Wanted', '1Teyovc3')
     ]
 
-    content = '推文測試'
-    testround: int = 10
+    content = '批踢踢實業坊，簡稱批踢踢、PTT，是一個臺灣電子布告欄（BBS），採用Telnet BBS技術運作，建立在台灣學術網路的資源之上，以學術性質為原始目的，提供線上言論空間。目前由國立臺灣大學電子布告欄系統研究社管理，大部份的系統原始碼由國立臺灣大學資訊工程學系的學生與校友進行維護，並且邀請法律專業人士擔任法律顧問。它有兩個分站，分別為批踢踢兔與批踢踢參。目前在批踢踢實業坊與批踢踢兔註冊總人數約150萬人，尖峰時段兩站超過15萬名使用者同時上線，擁有超過2萬個不同主題的看板，每日超過2萬篇新文章及50萬則推文被發表，是台灣使用人次最多的網路論壇之一。'
+    testround: int = 1
     for (board, index) in test_post_list:
         for i in range(testround):
             if isinstance(index, int):
@@ -700,23 +701,27 @@ def throw_waterball():
 
 
 def get_waterball():
-    operate_type = PTT.data_type.waterball_operate_type.NOTHING
+    # operate_type = PTT.data_type.waterball_operate_type.NOTHING
     # OperateType = PTT.data_type.waterball_operate_type.MAIL
-    # OperateType = PT4T.waterball_operate_type.CLEAR
+    operate_type = PTT.data_type.waterball_operate_type.CLEAR
 
-    waterball_list = ptt_bot.get_waterball(operate_type)
+    while True:
+        newest_index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+        waterball_list = ptt_bot.get_waterball(operate_type)
 
-    if waterball_list is None:
-        return
+        if waterball_list is None:
+            return
 
-    print('Result:')
-    for waterball in waterball_list:
-        if waterball.type == PTT.data_type.waterball_type.CATCH:
-            temp = '★' + waterball.target + ' '
-        elif waterball.type == PTT.data_type.waterball_type.SEND:
-            temp = 'To ' + waterball.target + ': '
-        temp += waterball.content + ' [' + waterball.date + ']'
-        print(temp)
+        # print('Result:')
+        for waterball in waterball_list:
+            if waterball.type == PTT.data_type.waterball_type.CATCH:
+                temp = '★' + waterball.target + ' '
+            elif waterball.type == PTT.data_type.waterball_type.SEND:
+                temp = 'To ' + waterball.target + ': '
+            temp += waterball.content + ' [' + waterball.date + ']'
+            print(temp)
+
+        time.sleep(0.5)
 
 
 def call_status():
@@ -778,7 +783,8 @@ def call_status():
 
 
 def give_money():
-    ptt_bot.give_money('DeepLearning', 1)
+    for _ in range(3):
+        ptt_bot.give_money('DeepLearning', 1)
 
 
 def mail():
@@ -807,10 +813,17 @@ def mail():
         0
     )
 
+    newest_index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+    print(f'最新郵件編號 {newest_index}')
+    # ptt_bot.del_mail(newest_index)
+
 
 def has_new_mail():
     result = ptt_bot.has_new_mail()
-    print(result)
+    ptt_bot.log(f'{result} 封新信')
+
+    result = ptt_bot.has_new_mail()
+    ptt_bot.log(f'{result} 封新信')
 
 
 ThreadBot = None
@@ -1007,6 +1020,19 @@ def get_board_info():
     # j - 未 設為冷靜模式                            p)進板畫面
     # 8 - 禁止 未滿十八歲進入
 
+    board_list = ptt_bot.get_board_list()
+    for board in board_list:
+        board_info = ptt_bot.get_board_info(board)
+
+        if not board_info.is_push_record_ip:
+            continue
+        if board_info.is_push_aligned:
+            continue
+
+        print(f'{board} !!!!!!!!!!')
+        # break
+    return
+
     if ptt_bot.config.host == PTT.data_type.host_type.PTT1:
         board_info = ptt_bot.get_board_info('Gossiping')
     else:
@@ -1059,6 +1085,56 @@ def search_user():
     #     print('Not exist')
 
 
+def get_mail():
+    for _ in range(3):
+        newest_index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+        print(f'最新信箱編號 {newest_index}')
+        mail_info = ptt_bot.get_mail(newest_index)
+
+        if mail_info is not None:
+            # print(mail_info.origin_mail)
+            print(mail_info.author)
+            # print(mail_info.title)
+            # print(mail_info.date)
+            # print(mail_info.content)
+            # print(mail_info.ip)
+            # print(mail_info.location)
+
+        # if newest_index > 1:
+        #     mail_info = ptt_bot.get_mail(newest_index - 1)
+        #     if mail_info is not None:
+        #         print(mail_info.author)
+        #         print(mail_info.title)
+        #         print(mail_info.date)
+        #         print(mail_info.content)
+        #         print(mail_info.ip)
+        #         print(mail_info.location)
+
+
+def mail_recviver():
+    while True:
+        # ptt_bot.config.log_level = PTT.log.level.TRACE
+        newest_index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+        # ptt_bot.config.log_level = PTT.log.level.INFO
+        ptt_bot.log(f'最新信箱編號 {newest_index}')
+        #
+        # user = ptt_bot.get_user(ptt_id)
+        # ptt_bot.log(f'信箱狀態: {user.mail_status}')
+
+        for index in range(1, newest_index + 1):
+            mail_info = ptt_bot.get_mail(newest_index)
+            print(mail_info.author)
+            print(mail_info.content)
+            ptt_bot.del_mail(index)
+
+        print('完成休息')
+        time.sleep(3)
+
+
+def change_pw():
+    ptt_bot.change_pw(password)
+
+
 if __name__ == '__main__':
     print('Welcome to PyPtt v ' + PTT.version.V + ' test case')
 
@@ -1081,13 +1157,13 @@ if __name__ == '__main__':
 
         init()
         ptt_bot = PTT.API(
-            # log_level=PTT.log.Level.TRACE,
+            # log_level=PTT.log.level.TRACE,
         )
         try:
             ptt_bot.login(
                 ptt_id,
                 password,
-                # kick_other_login=True
+                kick_other_login=True
             )
             pass
         except PTT.exceptions.LoginError:
@@ -1622,7 +1698,7 @@ github: https://tinyurl.com/umqff3v
             user_list = ptt_bot.search_user(
                 'coding'
             )
-            if len(user_list) != 14:
+            if len(user_list) == 0:
                 content = '查詢網友測試失敗'
                 ptt_bot.push(basic_board, PTT.data_type.push_type.ARROW,
                              content, post_aid=basic_post_aid)
@@ -1709,7 +1785,7 @@ github: https://tinyurl.com/umqff3v
                 ID2, Password2 = get_password('Account2.txt')
 
             PTTBot2 = PTT.API(
-                # log_level=PTT.log.Level.TRACE,
+                # log_level=PTT.log.level.TRACE,
             )
             try:
                 PTTBot2.login(
@@ -1775,13 +1851,13 @@ github: https://tinyurl.com/umqff3v
 
         ptt_bot.logout()
     else:
-        ptt_id, password = get_password('Account.txt')
+        ptt_id, password = get_password('Account3.txt')
         try:
             # init()
             # threading_test()
             ptt_bot = PTT.API(
-                # log_level=PTT.log.Level.TRACE,
-                # log_level=PTT.log.Level.DEBUG,
+                # log_level=PTT.log.level.TRACE,
+                # log_level=PTT.log.level.DEBUG,
                 # host=PTT.data_type.host_type.PTT2
 
                 # for 本機測試
@@ -1805,6 +1881,15 @@ github: https://tinyurl.com/umqff3v
                 ptt_bot.log('請稍等一下再登入')
                 sys.exit()
 
+            if ptt_bot.unregistered_user:
+                print('未註冊使用者')
+
+                if ptt_bot.process_picks != 0:
+                    print(f'註冊單處理順位 {ptt_bot.process_picks}')
+
+            if ptt_bot.registered_user:
+                print('已註冊使用者')
+
             ###################################
 
             ###################################
@@ -1814,7 +1899,7 @@ github: https://tinyurl.com/umqff3v
             # get_post()
             # get_post_with_condition()
             # post()
-            # get_newest_index()
+            get_newest_index()
             # crawl_board()
             # crawl_board_with_condition()
             # push()
@@ -1831,6 +1916,9 @@ github: https://tinyurl.com/umqff3v
             # get_favourite_board()
             # search_user()
             # get_post_index_test()
+            # get_mail()
+            # mail_recviver()
+            # change_pw()
 
             # bucket()
             # set_board_title()

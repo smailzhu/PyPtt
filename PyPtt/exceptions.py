@@ -1,4 +1,3 @@
-
 try:
     from . import data_type
     from . import i18n
@@ -17,7 +16,6 @@ class Error(Exception):
 
 class UnknownError(Exception):
     def __init__(self, message):
-
         self.message = message
 
     def __str__(self):
@@ -26,7 +24,6 @@ class UnknownError(Exception):
 
 class Requirelogin(Exception):
     def __init__(self, message):
-
         self.message = message
 
     def __str__(self):
@@ -35,7 +32,6 @@ class Requirelogin(Exception):
 
 class NoPermission(Exception):
     def __init__(self, message):
-
         self.message = message
 
     def __str__(self):
@@ -152,6 +148,14 @@ class WrongIDorPassword(Exception):
         return self.message
 
 
+class WrongPassword(Exception):
+    def __init__(self):
+        self.message = i18n.ErrorPW
+
+    def __str__(self):
+        return self.message
+
+
 class LoginTooOften(Exception):
     def __init__(self):
         self.message = i18n.LoginTooOften
@@ -245,6 +249,30 @@ class CanNotUseSearchPostCode(Exception):
 class UserHasPreviouslyBeenBanned(Exception):
     def __init__(self):
         self.message = i18n.UserHasPreviouslyBeenBanned
+
+    def __str__(self):
+        return self.message
+
+
+class MailboxFull(Exception):
+    def __init__(self):
+        self.message = i18n.MailBoxFull
+
+    def __str__(self):
+        return self.message
+
+
+class Timeout(Exception):
+    def __init__(self):
+        self.message = i18n.timeout
+
+    def __str__(self):
+        return self.message
+
+
+class NoSearchResult(Exception):
+    def __init__(self):
+        self.message = i18n.NoSearchResult
 
     def __str__(self):
         return self.message

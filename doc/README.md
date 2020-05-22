@@ -1,15 +1,9 @@
----
-tags: PyPtt
----
 # PyPtt 完全使用手冊
 
-:::danger
-註1:此手冊僅支援 [![Package Version](https://img.shields.io/pypi/v/PyPtt.svg)](https://pypi.python.org/pypi/PyPtt)，如果你使用的版本為 0.8.x，請參考 [[使用手冊 0.8]](https://hackmd.io/@CodingMan/PTTLibraryManual_0_8)
-註2:有出現在本手冊中的使用者或文章，如果不想出現，很抱歉請馬上告知我
-:::
+> 註1:此手冊僅支援 [![Package Version](https://img.shields.io/pypi/v/PyPtt.svg)](https://pypi.python.org/pypi/PyPtt)，如果你使用的版本為 0.8.x，請參考 [[使用手冊 0.8]](https://hackmd.io/@CodingMan/PTTLibraryManual_0_8)  
+> 註2:有出現在本手冊中的使用者或文章，如果不想出現，很抱歉請馬上告知我
 
 有任何使用上的問題都可以直接問我 [![chatroom icon](https://patrolavia.github.io/telegram-badge/chat.png)](https://t.me/PyPtt)
-Github: [PyPtt](https://github.com/Truth0906/PyPtt)
 
 ---
 
@@ -98,18 +92,21 @@ pip install PyPtt==VERSION
 ###### PTT.exceptions.UserHasPreviouslyBeenBanned
     Since 0.9.1
     使用者之前已被禁言
-
-
+###### PTT.exceptions.WrongPassword
+    Since 0.9.16
+    密碼錯誤
+###### PTT.exceptions.NoSearchResult
+    Since 0.9.17
+    沒有搜尋結果
 
 ---
 
 ## API
 
 ### 初始設定
-:::info
-PyPtt 並不支援兩個以上的 thread 同時操作一個物件
-如果有需求，請啟動新 thread 後，所有操作都在同一個 thread
-:::
+
+> PyPtt 並不支援兩個以上的 thread 同時操作一個物件  
+> 如果有需求，請啟動新 thread 後，所有操作都在同一個 thread
 
 以下是初始化物件的方式，如果沒有特別需求，這樣就可以取得物件了
 
@@ -135,13 +132,13 @@ ptt_bot = PTT.API(
 from PyPtt import PTT
 ptt_bot = PTT.API(
     # (預設值) INFO
-    # log_level=PTT.log.Level.INFO,
-    # log_level=PTT.log.Level.DEBUG,
-    log_level=PTT.log.Level.TRACE,
+    # log_level=PTT.log.level.INFO,
+    # log_level=PTT.log.level.DEBUG,
+    log_level=PTT.log.level.TRACE,
 )
 ```
 
-如果你的網路環境比較慢(例如海外)，常常不小心就 timeout，也有參數可以調整
+如果你的網路環境比較慢(例如海外)，常常不小心就 timeout，也有參數可以調整  
 Since 0.9.1
 ```python=
 from PyPtt import PTT
@@ -158,8 +155,8 @@ ptt_bot = PTT.API(
 )
 ```
 
-當然如果你有需要將 log 輸出成檔案或者其他需要處理 log 的需求
-你可以加入 log handler 就可以捕捉到所有輸出
+當然如果你有需要將 log 輸出成檔案或者其他需要處理 log 的需求  
+你可以加入 log handler 就可以捕捉到所有輸出  
 Since 0.8.11
 
 ```python=
@@ -173,8 +170,8 @@ ptt_bot = PTT.API(
 )
 ```
 
-當然 PyPtt 也支援批踢踢兔與本機。
-批踢踢兔 Since 0.8.25
+當然 PyPtt 也支援批踢踢兔與本機。  
+批踢踢兔 Since 0.8.25  
 本機 Since 0.9.1
 
 ```python=
@@ -188,9 +185,9 @@ ptt2_bot = PTT.API(
 )
 ```
 
-如果有 telnet 的需求，可以切換連線模式
-如果需要更換 port 也是支援的
-值得注意的是，根據測試結果無加密的 telnet 比 websocket 慢
+如果有 telnet 的需求，可以切換連線模式  
+如果需要更換 port 也是支援的  
+值得注意的是，根據測試結果無加密的 telnet 比 websocket 慢  
 Since 0.9.1
 
 ```python=
@@ -208,8 +205,8 @@ ptt_bot = PTT.API(
     
 ### 登入登出
 
-以下就是登入登出範例
-
+以下就是登入登出範例  
+登入完成，你可以查看一些變數來了解帳號的狀態
 
 ```python=
 import sys
@@ -229,6 +226,15 @@ except PTT.exceptions.LoginTooOften:
     sys.exit()
 ptt_bot.log('登入成功')
 
+if ptt_bot.unregistered_user:
+    print('未註冊使用者')
+
+    if ptt_bot.process_picks != 0:
+        print(f'註冊單處理順位 {ptt_bot.process_picks}')
+
+if ptt_bot.registered_user:
+    print('已註冊使用者')
+
 # call ptt_bot other api
 
 ptt_bot.logout()
@@ -237,7 +243,7 @@ ptt_bot.logout()
 
 ![](https://i.imgur.com/wfaf8Bk.gif)
 
-如果你的登入需要剔除其他的登入
+如果你的登入需要剔除其他的登入  
 那可以將 kick_other_login=True 加入 login 參數
 
 ```python=
@@ -271,7 +277,7 @@ ptt_bot.logout()
 
 ### 取得特定文章
 
-以下便是最簡單的取得特定文章的範例
+以下便是最簡單的取得特定文章的範例  
 註: Python 板第 7486 篇文章
 ```python=
 from PyPtt import PTT
@@ -306,7 +312,7 @@ if post_info.delete_status != PTT.data_type.post_delete_status.NOT_DELETED:
         print(f'[板主刪除][{post_info.author}]')
     elif post_info.delete_status == PTT.data_type.post_delete_status.AUTHOR:
         print(f'[作者刪除][{post_info.author}]')
-    elif post_info.delete_status == PTT.data_type.post_delete_status.ByUnknow:
+    elif post_info.delete_status == PTT.data_type.post_delete_status.UNKNOWN:
         print(f'[不明刪除]')
     return
 
@@ -368,13 +374,12 @@ print(f'Total {push_count} Pushs {boo_count} Boo {arrow_count} Arrow')
 
 ![](https://i.imgur.com/M6XGFzD.png)
 
-:::info
-備註: 因為 PTT 推文計數至少有三分鐘的時間間隔，所以在使用推文條件搜尋的情況下
-可能導致結果不夠即時
-:::
+> 備註: 因為根據 PTT 原始碼推文計數擁有**神奇演算法**，在文章前面顯示的推噓文統計
+> 可能是不準確的，可能會與直接計算內部推噓文結果不同，  
+> 所以在使用推文條件搜尋的情況下，可能導致結果不夠準確
 
-當然如果需要加條件搜尋也是可以的
-只是我們需要知道加了搜尋條件之後的最大編號是多少
+當然如果需要加條件搜尋也是可以的  
+只是我們需要知道加了搜尋條件之後的最大編號是多少  
 請看以下範例
 
 ```python=
@@ -409,13 +414,13 @@ for (test_board, search_type, condition) in test_list:
 
 ![](https://i.imgur.com/jF63MGp.png)
 
-如果只需要對文章按 Q 的資訊
+如果只需要對文章按 Q 的資訊  
 Since 0.8.16
 
 ![](https://i.imgur.com/TdP5wL4.png)
 
 
-你可以啟用 query 模式，這樣就不會進入文章解析內文、推文、IP與地點等等
+你可以啟用 query 模式，這樣就不會進入文章解析內文、推文、IP與地點等等  
 可以提升效能
 
 ```python=
@@ -430,7 +435,7 @@ post_info = ptt_bot.get_post(
 
 ### 取得最新文章編號
 
-當你想要取得的文章編號範圍包含最新文章的時候，
+當你想要取得的文章編號範圍包含最新文章的時候  
 你就會需要這隻 API 來取得最新編號是多少
 
 ```python=
@@ -485,7 +490,7 @@ def crawl_handler(post_info):
             print(f'[板主刪除][{post_info.author}]')
         elif post_info.delete_status == PTT.data_type.post_delete_status.AUTHOR:
             print(f'[作者刪除][{post_info.author}]')
-        elif post_info.delete_status == PTT.data_type.post_delete_status.ByUnknow:
+        elif post_info.delete_status == PTT.data_type.post_delete_status.UNKNOWN:
             print(f'[不明刪除]')
         return
 
@@ -534,14 +539,11 @@ if len(del_post_list) > 0:
 ![](https://i.imgur.com/BO3QLf2.png)
 
 
-:::info
-備註: 因為 PTT 推文計數有三分鐘的時間間隔，所以在使用推文條件搜尋的情況下
-可能導致結果不夠即時
-:::
-當然我們也可以像 getPost 那樣加入搜尋條件來爬我們的結果
-:::info
-在有下搜尋條件的情況下，無法使用 AID 來標記爬文範圍
-:::
+> 備註: 因為 PTT 推文計數有三分鐘的時間間隔，所以在使用推文條件搜尋的情況下
+> 可能導致結果不夠即時  
+> 在有下搜尋條件的情況下，無法使用 AID 來標記爬文範圍
+
+當然我們也可以像 get_post 那樣加入搜尋條件來爬我們的結果
 
 ```python=
 def show_condition(board, search_type, condition):
@@ -597,16 +599,15 @@ for (test_board, search_type, condition) in test_list:
         search_condition=condition,
     )
 
-    # print('標題: ' + Post.getTitle())
     print('=' * 50)
 ```
 
-如果只需要對文章按 Q 的資訊
+如果只需要對文章按 Q 的資訊  
 Since 0.8.16
 
 ![](https://i.imgur.com/p4kt1JC.png)
 
-你可以啟用 Query 模式，這樣就不會點進去解析內文、推文跟 IP 等等
+你可以啟用 Query 模式，這樣就不會點進去解析內文、推文跟 IP 等等  
 可以加快一些速度，並減少出錯機率
 
 ```python=
@@ -674,7 +675,7 @@ ptt_bot.push(test_board, PTT.data_type.push_type.PUSH, content, post_index=test_
 
 ### 查詢使用者
 
-以下是查詢使用者範例
+以下是查詢使用者範例  
 如果查無使用者則會丟出 PTT.exceptions.NoSuchUser 例外
 
 ```python=
@@ -709,7 +710,7 @@ except PTT.exceptions.NoSuchUser:
 
 ### 呼叫器
 
-在這裡將會展示取得現在呼叫器狀態後
+在這裡將會展示取得現在呼叫器狀態後  
 隨機地去設定除了現在以外的一種呼叫器狀態
 
 ```python=
@@ -750,10 +751,10 @@ show_call_status(call_status)
 
 ### 水球
 
-首先展示丟水球的範例
+首先展示丟水球的範例  
 在這裡則可以看到有兩種例外
 
-無此使用者 PTT.exceptions.NoSuchUser
+無此使用者 PTT.exceptions.NoSuchUser  
 使用者離線 PTT.exceptions.UserOffline
 
 ```python=
@@ -767,7 +768,7 @@ except PTT.exceptions.UserOffline:
     print('使用者離線')
 ```
 
-接下來是接水球範例
+接下來是接水球範例  
 建議如果要穩定收到水球請參考 [呼叫器](#呼叫器) 先將呼叫器切換成關閉
 
 ```python=
@@ -811,9 +812,9 @@ ptt_bot.give_money('CodingMan', 100)
 
 ---
 
-### 寄信
+### 寄信 取得信件 刪除信件
 
-以下是寄信範例
+以下是寄信範例  
 如果對象不存在則會丟出 PTT.exceptions.NoSuchUser 例外
 
 ```python=
@@ -821,7 +822,7 @@ ptt_id = 'CodingMan'
 content = '''如有誤寄，對..對不起
 PyPtt 程式寄信測試內容
 
-程式碼: https://github.com/PttCodingMan/PTTLibrary
+程式碼: https://github.com/PttCodingMan/PyPtt
 '''
 content = content.replace('\n', '\r\n')
 
@@ -848,10 +849,43 @@ except PTT.exceptions.NoSuchUser:
 
 ![](https://i.imgur.com/XubpFRP.png)
 
+如果有取得信件的需求，可以使用 get_mail 這支 API  
+因為是根據 index 來取得信件，所以一樣要使用 get_newest_index 來取得最新的信件編號    
+範例程式碼是固定取得最新的信件
+信件 index 範圍是 1 ~ newest_index  
+Since 0.9.8
+
+```python=
+newest_index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+print(f'最新郵件編號 {newest_index}')
+mail_info = ptt_bot.get_mail(newest_index)
+
+print(mail_info.origin_mail)    # 原始信件
+print(mail_info.author)         # 作者
+print(mail_info.title)          # 標題
+print(mail_info.date)           # 日期
+print(mail_info.content)        # 內文
+print(mail_info.ip)             # ip
+print(mail_info.location)       # 地區: 舊版本信件則為 None
+```
+
+取完信件之後，我們來看看怎麼刪除信件  
+範例程式碼是固定刪掉最新的信件  
+信件 index 範圍是 1 ~ newest_index  
+Since 0.9.8
+
+```python=
+newest_index = ptt_bot.get_newest_index(PTT.data_type.index_type.MAIL)
+print(f'最新郵件編號 {newest_index}')
+ptt_bot.del_mail(newest_index)
+```
 
 ---
 
 ### 偵測是否有新信
+
+此為偵測新信 API，如果大於 1，就是有新信:D
+> 註: 如果你的信箱信件處在 1 ~ 20 封信，那會稍微等久一點
 
 ```python=
 result = ptt_bot.has_new_mail()
@@ -904,8 +938,8 @@ for board in favourite_board_list:
 ---
 
 ### 搜尋網友
-以下是搜尋網友功能，輸入部分帳號回傳所有可能
-支援特定頁面範圍，以提升搜尋效能
+以下是搜尋網友功能，輸入部分帳號回傳所有可能  
+支援特定頁面範圍，以提升搜尋效能  
 Since 0.8.30
 
 ```python=
@@ -920,13 +954,25 @@ print(len(user_list))
 ```
 
 執行結果
+
 ![](https://i.imgur.com/gce3qy4.png)
 
 ---
 
+### 取得時間
+以下是取得批踢踢時間功能
+
+```python=
+ptt_time = ptt_bot.get_time()
+print(ptt_time)
+```
+
+---
+
 ### 取得看板資訊
+
+以下是取得看板資訊 API  
 Since 0.8.32
-以下是取得看板資訊 API
 
 ```python=
 if ptt_bot.config.host == PTT.data_type.host_type.PTT1:
@@ -960,13 +1006,15 @@ print('發文與推文限制退文篇數多少篇以下: ', board_info.require_i
 ![](https://i.imgur.com/TIR71MY.png)
 
 執行結果
+
 ![](https://i.imgur.com/unHbEUp.png)
 
 ---
 
 ### 回覆文章
+
+以下是回覆文章 API  
 Since 0.8.26
-以下是回覆文章 API
 
 ```python=
 reply_post_index = 313
@@ -995,11 +1043,23 @@ ptt_bot.reply_post(
 
 ---
 
+### 更改密碼
+
+以下是更改密碼 API  
+Since 0.9.16
+
+```python=
+ptt_bot.change_pw(new_password)
+```
+
+---
+
 ## 板主專用 API
 
 ### 設定板標
+
+如果有定時設定板標的需求，這時候就可以使用 set_board_title  
 Since 0.8.26
-如果有定時設定板標的需求，這時候就可以使用 set_board_title
 
 ```python=
 from time import strftime
@@ -1043,9 +1103,9 @@ while True:
 ---
 
 ### 標記文章
-Since 0.8.26
 
 如果板主有標記文章 S or D 的需求，可以參考以下使用方法
+Since 0.8.26
 
 ```python=
 # s 文章
@@ -1076,9 +1136,8 @@ ptt_bot.mark_post(
 ---
 
 ### 水桶
+如果板主想要自動化水桶，當然也是可以的喔!!  
 Since 0.8.29
-
-如果板主想要自動化水桶，當然也是可以的喔!!
 
 ```python=
 ptt_bot.bucket(
@@ -1099,9 +1158,9 @@ ptt_bot.bucket(
 
 ### 在 jupyter 使用
 
-因為 jupyter 內部也使用了 asyncio 作為協程管理工具
-會跟 PyPtt 內部的 asyncio 衝突
-所以如果想要在 jypyter 內使用，請在你的程式碼中加入以下程式碼
+因為 jupyter 內部也使用了 asyncio 作為協程管理工具  
+會跟 PyPtt 內部的 asyncio 衝突  
+所以如果想要在 jypyter 內使用，請在你的程式碼中加入以下程式碼  
 
 安裝
 
@@ -1139,4 +1198,5 @@ ptt_bot.post(
 )
 ```
 執行結果
+
 ![](https://i.imgur.com/TOskgf0.png)

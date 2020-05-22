@@ -1,4 +1,3 @@
-
 try:
     from . import lib_util
 except ModuleNotFoundError:
@@ -6,7 +5,6 @@ except ModuleNotFoundError:
 
 
 class language(object):
-
     CHINESE: int = 1
     ENGLISH: int = 2
 
@@ -41,6 +39,7 @@ Info = None
 Debug = None
 Again = None
 ErrorIDPW = None
+ErrorPW = None
 ScreenNoMatchTarget = None
 SigningUnPleaseWait = None
 Msg = None
@@ -66,6 +65,9 @@ Integer = None
 Boolean = None
 ID = None
 Password = None
+InputOriginPassword = None
+InputNewPassword = None
+CheckNewPassword = None
 Board = None
 IntoBoard = None
 BothInput = None
@@ -116,6 +118,7 @@ VerifyID = None
 TradingInProgress = None
 Transaction = None
 MoneyTooFew = None
+TransactionCancelled = None
 ConstantRedBag = None
 SendMail = None
 Select = None
@@ -160,6 +163,7 @@ MarkPost = None
 DelAllMarkPost = None
 NoSuchPost = None
 GoMainMenu = None
+ErrorLoginRichPeopleGoMainMenu = None
 CanNotUseSearchPostCodeF = None
 FavouriteBoardList = None
 bucket = None
@@ -169,17 +173,28 @@ UnconfirmedPost = None
 Reading = None
 ReadComplete = None
 QuitUserProfile = None
+NoMail = None
+UseMailboxAPIWillLogoutAfterExecution = None
+PicksInRegister = None
+RegisterInProcessing = None
+record_ip = None
+not_record_ip = None
+push_aligned = None
+not_push_aligned = None
+confirm = None
+timeout = None
+NoSearchResult = None
 
 
-def specific_load(language, lang_list):
+def specific_load(input_language, lang_list):
     global languageList
 
     if len(languageList) != len(lang_list):
         raise ValueError('SpecificLoad LangList legnth error')
 
-    if language not in languageList:
-        raise ValueError('SpecificLoad Unknow language', language)
-    return lang_list[languageList.index(language)]
+    if input_language not in languageList:
+        raise ValueError('SpecificLoad Unknow language', input_language)
+    return lang_list[languageList.index(input_language)]
 
 
 def replace(string, *args):
@@ -324,6 +339,12 @@ def load(input_lang):
     ErrorIDPW = specific_load(input_lang, [
         '密碼不對或無此帳號',
         'Wrong password or no such id',
+    ])
+
+    global ErrorPW
+    ErrorPW = specific_load(input_lang, [
+        '密碼不正確',
+        'Wrong password',
     ])
 
     global ScreenNoMatchTarget
@@ -474,6 +495,24 @@ def load(input_lang):
     Password = specific_load(input_lang, [
         '密碼',
         'Password',
+    ])
+
+    global InputOriginPassword
+    InputOriginPassword = specific_load(input_lang, [
+        '輸入原密碼',
+        'Input Origin Password',
+    ])
+
+    global InputNewPassword
+    InputNewPassword = specific_load(input_lang, [
+        '設定新密碼',
+        'Input New Password',
+    ])
+
+    global CheckNewPassword
+    CheckNewPassword = specific_load(input_lang, [
+        '檢查新密碼',
+        'CheckNewPassword',
     ])
 
     global Board
@@ -782,6 +821,12 @@ def load(input_lang):
         'The amount is too small, the transaction is cancelled!',
     ])
 
+    global TransactionCancelled
+    TransactionCancelled = specific_load(input_lang, [
+        '交易取消!',
+        'The transaction is cancelled!',
+    ])
+
     global ConstantRedBag
     ConstantRedBag = specific_load(input_lang, [
         '不修改紅包袋',
@@ -920,7 +965,6 @@ def load(input_lang):
         f'{PTT2} Not Support',
     ])
 
-    # Animation
     global AnimationPost
     AnimationPost = specific_load(input_lang, [
         '動畫文章',
@@ -1047,6 +1091,12 @@ def load(input_lang):
         'Back to main memu',
     ])
 
+    global ErrorLoginRichPeopleGoMainMenu
+    ErrorLoginRichPeopleGoMainMenu = specific_load(input_lang, [
+        '誤入大富翁區，回到主選單',
+        'Stray into the Monopoly area and return to the main menu',
+    ])
+
     global CanNotUseSearchPostCodeF
     CanNotUseSearchPostCodeF = specific_load(input_lang, [
         '此狀態下無法使用搜尋文章代碼(AID)功能',
@@ -1101,6 +1151,72 @@ def load(input_lang):
         f'Quit User Profile',
     ])
 
+    global NoMail
+    NoMail = specific_load(input_lang, [
+        f'沒有信件',
+        f'You have no mail',
+    ])
+
+    global UseMailboxAPIWillLogoutAfterExecution
+    UseMailboxAPIWillLogoutAfterExecution = specific_load(input_lang, [
+        f'如果使用信箱相關功能，將執行後自動登出',
+        f'If you use mailbox related functions, you will be logged out automatically after execution',
+    ])
+
+    global PicksInRegister
+    PicksInRegister = specific_load(input_lang, [
+        '註冊申請單處理順位',
+        'Registration application processing order',
+    ])
+
+    global RegisterInProcessing
+    RegisterInProcessing = specific_load(input_lang, [
+        '註冊申請單尚在處理中',
+        'Register is in processing',
+    ])
+
+    global record_ip
+    record_ip = specific_load(input_lang, [
+        '紀錄 IP',
+        'Record ip',
+    ])
+
+    global not_record_ip
+    not_record_ip = specific_load(input_lang, [
+        '不紀錄 IP',
+        'Not record ip',
+    ])
+
+    global push_aligned
+    push_aligned = specific_load(input_lang, [
+        '推文對齊',
+        'Push aligned',
+    ])
+
+    global not_push_aligned
+    not_push_aligned = specific_load(input_lang, [
+        '無推文對齊',
+        'No push aligned',
+    ])
+
+    global confirm
+    confirm = specific_load(input_lang, [
+        '確認',
+        'Confirm',
+    ])
+
+    global timeout
+    timeout = specific_load(input_lang, [
+        '超時',
+        'Timeout',
+    ])
+
+    global NoSearchResult
+    NoSearchResult = specific_load(input_lang, [
+        '沒有搜尋結果',
+        'No Search Result',
+    ])
+
     # No changes have been made to any settings
 
     # Quote original
@@ -1120,7 +1236,6 @@ def load(input_lang):
 
 
 def _createlist():
-
     i18nStrList = []
 
     for k, v in globals().items():

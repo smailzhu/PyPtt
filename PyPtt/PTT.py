@@ -45,6 +45,7 @@ class API:
             log_handler=None,
             host: int = 0):
 
+        self._mailbox_full = False
         self._ID = None
         if log_handler is not None and not callable(log_handler):
             raise TypeError('[PyPtt] log_handler is must callable!!')
@@ -65,7 +66,9 @@ class API:
         print('Developed by CodingMan')
 
         self._login_status = False
-        self._unregistered_user = True
+        self.unregistered_user = True
+        self.registered_user = False
+        self.process_picks = 0
 
         self.config = config.Config()
 
@@ -89,7 +92,7 @@ class API:
 
         if log_level == 0:
             log_level = self.config.log_level
-        elif not lib_util.check_range(log.Level, log_level):
+        elif not lib_util.check_range(log.level, log_level):
             raise ValueError('[PyPtt] Unknown log_level', log_level)
         else:
             self.config.log_level = log_level
@@ -106,14 +109,14 @@ class API:
             self.config.log_handler = log_handler
             log.show_value(
                 self.config,
-                log.Level.INFO,
+                log.level.INFO,
                 i18n.log_handler,
                 i18n.Init
             )
         elif has_log_handler and not set_log_handler_result:
             log.show_value(
                 self.config,
-                log.Level.INFO,
+                log.level.INFO,
                 i18n.log_handler,
                 [
                     i18n.Init,
@@ -123,7 +126,7 @@ class API:
 
         if self.config.language == i18n.language.CHINESE:
             log.show_value(
-                self.config, log.Level.INFO, [
+                self.config, log.level.INFO, [
                     i18n.ChineseTranditional,
                     i18n.languageModule
                 ],
@@ -131,7 +134,7 @@ class API:
             )
         elif self.config.language == i18n.language.ENGLISH:
             log.show_value(
-                self.config, log.Level.INFO, [
+                self.config, log.level.INFO, [
                     i18n.English,
                     i18n.languageModule
                 ],
@@ -161,7 +164,7 @@ class API:
         if self.config.host == data_type.host_type.PTT1:
             log.show_value(
                 self.config,
-                log.Level.INFO,
+                log.level.INFO,
                 [
                     i18n.Connect,
                     i18n.host
@@ -171,7 +174,7 @@ class API:
         elif self.config.host == data_type.host_type.PTT2:
             log.show_value(
                 self.config,
-                log.Level.INFO,
+                log.level.INFO,
                 [
                     i18n.Connect,
                     i18n.host
@@ -181,7 +184,7 @@ class API:
         elif self.config.host == data_type.host_type.LOCALHOST:
             log.show_value(
                 self.config,
-                log.Level.INFO,
+                log.level.INFO,
                 [
                     i18n.Connect,
                     i18n.host
@@ -190,21 +193,22 @@ class API:
             )
 
         self.connect_core = connect_core.API(self.config)
-        self._ExistBoardList = []
+        self._exist_board_list = []
+        self._board_info_list = dict()
         self._ModeratorList = dict()
         self._LastThrowWaterBallTime = 0
         self._ThreadID = threading.get_ident()
 
         log.show_value(
             self.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             'ThreadID',
             self._ThreadID
         )
 
         log.show_value(
             self.config,
-            log.Level.INFO,
+            log.level.INFO,
             [
                 i18n.Library,
                 ' v ' + version.V,
@@ -218,13 +222,13 @@ class API:
             return
         log.show_value(
             self.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             'ThreadID',
             self._ThreadID
         )
         log.show_value(
             self.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             'Current thread id',
             current_thread_id
         )
@@ -294,7 +298,7 @@ class API:
 
     def log(self, msg: str) -> None:
         self._one_thread()
-        log.log(self.config, log.Level.INFO, msg)
+        log.log(self.config, log.level.INFO, msg)
 
     def get_time(self) -> str:
         self._one_thread()
@@ -457,7 +461,7 @@ class API:
             if need_continue:
                 log.log(
                     self.config,
-                    log.Level.DEBUG,
+                    log.level.DEBUG,
                     'Wait for retry repost'
                 )
                 time.sleep(0.1)
@@ -470,9 +474,10 @@ class API:
             self,
             board: str,
             check_moderator: bool = False) -> None:
-        if board.lower() not in self._ExistBoardList:
+        if board.lower() not in self._exist_board_list:
             board_info = self._get_board_info(board)
-            self._ExistBoardList.append(board.lower())
+            self._exist_board_list.append(board.lower())
+            self._board_info_list[board.lower()] = board_info
 
             moderators = board_info.moderators
             moderators = [x.lower() for x in moderators]
@@ -516,7 +521,6 @@ class API:
         check_value.check(
             self.config, int, 'index_type',
             index_type, value_class=data_type.index_type)
-        check_value.check(self.config, str, 'Board', board)
 
         try:
             from . import _api_get_newest_index
@@ -538,9 +542,13 @@ class API:
             search_condition: str = None) -> int:
         self._one_thread()
 
-        if index_type == data_type.index_type.BBS:
+        if index_type == data_type.index_type.BBS or index_type == data_type.index_type.MAIL:
             if not self._login_status:
                 raise exceptions.Requirelogin(i18n.Requirelogin)
+
+        if index_type == data_type.index_type.MAIL:
+            if self.unregistered_user:
+                raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
 
@@ -550,6 +558,8 @@ class API:
                 board,
                 search_type,
                 search_condition)
+        except exceptions.NoSearchResult:
+            raise exceptions.NoSearchResult
         except Exception:
             return self._get_newest_index(
                 index_type,
@@ -691,21 +701,21 @@ class API:
 
             log.show_value(
                 self.config,
-                log.Level.DEBUG,
+                log.level.DEBUG,
                 'StartIndex',
                 start_index
             )
 
             log.show_value(
                 self.config,
-                log.Level.DEBUG,
+                log.level.DEBUG,
                 'EndIndex',
                 end_index
             )
 
             error_post_list = []
             del_post_list = []
-            if self.config.log_level == log.Level.INFO:
+            if self.config.log_level == log.level.INFO:
                 PB = progressbar.ProgressBar(
                     max_value=end_index - start_index + 1,
                     redirect_stdout=True
@@ -744,7 +754,7 @@ class API:
                             raise e
                         log.log(
                             self.config,
-                            log.Level.INFO,
+                            log.level.INFO,
                             i18n.RestoreConnection
                         )
                         self._login(
@@ -758,7 +768,7 @@ class API:
                             raise e
                         log.log(
                             self.config,
-                            log.Level.INFO,
+                            log.level.INFO,
                             i18n.RestoreConnection
                         )
                         self._login(
@@ -776,7 +786,7 @@ class API:
                     if need_continue:
                         log.log(
                             self.config,
-                            log.Level.DEBUG,
+                            log.level.DEBUG,
                             'Wait for retry repost'
                         )
                         time.sleep(0.1)
@@ -784,7 +794,7 @@ class API:
 
                     break
 
-                if self.config.log_level == log.Level.INFO:
+                if self.config.log_level == log.level.INFO:
                     PB.update(index - start_index)
                 if post is None:
                     error_post_list.append(index)
@@ -798,7 +808,7 @@ class API:
                 if post.delete_status != data_type.post_delete_status.NOT_DELETED:
                     del_post_list.append(index)
                 post_handler(post)
-            if self.config.log_level == log.Level.INFO:
+            if self.config.log_level == log.level.INFO:
                 PB.finish()
 
             return error_post_list, del_post_list
@@ -832,7 +842,7 @@ class API:
             # PostAID = ""
             _url = 'https://www.ptt.cc/bbs/'
             index = str(newest_index)
-            if self.config.log_level == log.Level.INFO:
+            if self.config.log_level == log.level.INFO:
                 PB = progressbar.ProgressBar(
                     max_value=end_page - start_page + 1,
                     redirect_stdout=True
@@ -852,7 +862,7 @@ class API:
             for index in range(start_page, newest_index + 1):
                 log.show_value(
                     self.config,
-                    log.Level.DEBUG,
+                    log.level.DEBUG,
                     'CurrentPage',
                     index
                 )
@@ -892,12 +902,12 @@ class API:
                     )
                     post_handler(post)
 
-                if self.config.log_level == log.Level.INFO:
+                if self.config.log_level == log.level.INFO:
                     PB.update(index - start_page)
 
             log.show_value(
                 self.config,
-                log.Level.DEBUG,
+                log.level.DEBUG,
                 'DelPostList',
                 del_post_list
             )
@@ -905,7 +915,7 @@ class API:
             # 4. 把組合出來的 Post 塞給 handler
 
             # 5. 顯示 progress bar
-            if self.config.log_level == log.Level.INFO:
+            if self.config.log_level == log.level.INFO:
                 PB.finish()
 
             return error_post_list, del_post_list
@@ -1022,7 +1032,44 @@ class API:
 
         self._check_board(board)
 
-        max_push_length = 33
+        board_info = self._board_info_list[board.lower()]
+
+        if board_info.is_push_record_ip:
+            log.log(
+                self.config,
+                log.level.INFO,
+                i18n.record_ip)
+            if board_info.is_push_aligned:
+                log.log(
+                    self.config,
+                    log.level.INFO,
+                    i18n.push_aligned)
+                max_push_length = 32
+            else:
+                log.log(
+                    self.config,
+                    log.level.INFO,
+                    i18n.not_push_aligned)
+                max_push_length = 43 - len(self._ID)
+        else:
+            log.log(
+                self.config,
+                log.level.INFO,
+                i18n.not_record_ip)
+            #     推文對齊
+            if board_info.is_push_aligned:
+                log.log(
+                    self.config,
+                    log.level.INFO,
+                    i18n.push_aligned)
+                max_push_length = 46
+            else:
+                log.log(
+                    self.config,
+                    log.level.INFO,
+                    i18n.not_push_aligned)
+                max_push_length = 58 - len(self._ID)
+
         push_list = []
 
         temp_start_index = 0
@@ -1056,7 +1103,7 @@ class API:
         for push in push_list:
             log.show_value(
                 self.config,
-                log.Level.INFO,
+                log.level.INFO,
                 i18n.Push,
                 push
             )
@@ -1075,7 +1122,7 @@ class API:
                     # screens.show(self.config, self.connect_core.getScreenQueue())
                     log.log(
                         self.config,
-                        log.Level.INFO,
+                        log.level.INFO,
                         '等待快速推文'
                     )
                     time.sleep(5.2)
@@ -1126,7 +1173,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1139,7 +1186,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1173,7 +1220,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1195,7 +1242,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1219,7 +1266,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1241,7 +1288,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1269,7 +1316,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1277,6 +1324,8 @@ class API:
         check_value.check(self.config, str, 'ptt_id', ptt_id)
         check_value.check(self.config, str, 'title', title)
         check_value.check(self.config, str, 'content', content)
+
+        self.get_user(ptt_id)
 
         check_sign_file = False
         for i in range(0, 10):
@@ -1307,11 +1356,18 @@ class API:
             content,
             sign_file)
 
+        if self._mailbox_full:
+            self.logout()
+            raise exceptions.MailboxFull()
+
     def has_new_mail(self) -> int:
         self._one_thread()
 
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
+
+        if self.get_newest_index(data_type.index_type.MAIL) == 0:
+            return 0
 
         self.config.log_last_value = None
 
@@ -1415,7 +1471,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1448,7 +1504,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1490,7 +1546,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1525,7 +1581,7 @@ class API:
         if not self._login_status:
             raise exceptions.Requirelogin(i18n.Requirelogin)
 
-        if self._unregistered_user:
+        if self.unregistered_user:
             raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
 
         self.config.log_last_value = None
@@ -1580,6 +1636,66 @@ class API:
             import _api_get_board_info
 
         return _api_get_board_info.get_board_info(self, board, call_by_others)
+
+    def get_mail(self, index):
+
+        self._one_thread()
+
+        if not self._login_status:
+            raise exceptions.Requirelogin(i18n.Requirelogin)
+
+        if self.unregistered_user:
+            raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
+
+        self.config.log_last_value = None
+
+        if index == 0:
+            return None
+        current_index = self.get_newest_index(data_type.index_type.MAIL)
+        check_value.check_index(self.config, 'index', index, current_index)
+
+        try:
+            from . import _api_mail
+        except ModuleNotFoundError:
+            import _api_mail
+
+        return _api_mail.get_mail(self, index)
+
+    def del_mail(self, index):
+        self._one_thread()
+
+        if not self._login_status:
+            raise exceptions.Requirelogin(i18n.Requirelogin)
+
+        if self.unregistered_user:
+            raise exceptions.UnregisteredUser(lib_util.get_current_func_name())
+
+        self.config.log_last_value = None
+
+        current_index = self.get_newest_index(data_type.index_type.MAIL)
+        check_value.check_index(self.config, index, current_index)
+
+        try:
+            from . import _api_mail
+        except ModuleNotFoundError:
+            import _api_mail
+
+        return _api_mail.del_mail(self, index)
+
+    def change_pw(self, new_password):
+        self._one_thread()
+
+        if not self._login_status:
+            raise exceptions.Requirelogin(i18n.Requirelogin)
+
+        new_password = new_password[:8]
+
+        try:
+            from . import _api_change_pw
+        except ModuleNotFoundError:
+            import _api_change_pw
+
+        _api_change_pw.change_pw(self, new_password)
 
 
 if __name__ == '__main__':

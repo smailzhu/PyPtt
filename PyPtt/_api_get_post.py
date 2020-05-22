@@ -8,6 +8,7 @@ try:
     from . import screens
     from . import exceptions
     from . import command
+    from . import _api_util
 except ModuleNotFoundError:
     import data_type
     import i18n
@@ -16,6 +17,7 @@ except ModuleNotFoundError:
     import screens
     import exceptions
     import command
+    import _api_util
 
 
 def get_post(
@@ -69,7 +71,7 @@ def get_post(
             screens.Target.QueryPost,
             break_detect=True,
             refresh=False,
-            log_level=log.Level.DEBUG
+            log_level=log.level.DEBUG
         ),
         connect_core.TargetUnit(
             [
@@ -78,7 +80,7 @@ def get_post(
             ],
             screens.Target.InBoard,
             break_detect=True,
-            log_level=log.Level.DEBUG
+            log_level=log.level.DEBUG
         ),
         connect_core.TargetUnit(
             i18n.NoSuchBoard,
@@ -94,11 +96,11 @@ def get_post(
     post_title = None
     if index < 0 or index == 1:
         # 文章被刪除
-        log.log(api.config, log.Level.DEBUG, i18n.PostDeleted)
+        log.log(api.config, log.level.DEBUG, i18n.PostDeleted)
 
         log.show_value(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             'OriScreen',
             ori_screen
         )
@@ -112,7 +114,7 @@ def get_post(
         cursor_line = cursor_line[0]
         log.show_value(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             'CursorLine',
             cursor_line
         )
@@ -143,10 +145,10 @@ def get_post(
             post_author = None
             post_del_status = data_type.post_delete_status.UNKNOWN
 
-        log.show_value(api.config, log.Level.DEBUG, 'ListDate', list_date)
-        log.show_value(api.config, log.Level.DEBUG,
+        log.show_value(api.config, log.level.DEBUG, 'ListDate', list_date)
+        log.show_value(api.config, log.level.DEBUG,
                        'PostAuthor', post_author)
-        log.show_value(api.config, log.Level.DEBUG,
+        log.show_value(api.config, log.level.DEBUG,
                        'post_del_status', post_del_status)
 
         return data_type.PostInfo(
@@ -160,8 +162,14 @@ def get_post(
     elif index == 0:
 
         lock_post = False
-        cursor_line = [line for line in ori_screen.split(
-            '\n') if line.startswith(api.cursor)][0]
+        try:
+            cursor_line = [line for line in ori_screen.split(
+                '\n') if line.strip().startswith(api.cursor)][0]
+        except Exception as e:
+            print(api.cursor)
+            print(ori_screen)
+            raise e
+
         post_author = cursor_line
         if '□' in post_author:
             post_author = post_author[:post_author.find('□')].strip()
@@ -240,8 +248,8 @@ def get_post(
 
         push_number = cursor_line
         # print(f'2>{push_number}<')
-        push_number = push_number[7:11]
-        # print(PushNumber)
+        push_number = push_number[7:10]
+        # print(push_number)
         push_number = push_number.split(' ')
         # print(PushNumber)
         push_number = list(filter(None, push_number))
@@ -272,14 +280,14 @@ def get_post(
                 push_number = None
 
         # print(PushNumber)
-        log.show_value(api.config, log.Level.DEBUG,
+        log.show_value(api.config, log.level.DEBUG,
                        'PostAuthor', post_author)
-        log.show_value(api.config, log.Level.DEBUG, 'PostTitle', post_title)
-        log.show_value(api.config, log.Level.DEBUG, 'PostAID', post_aid)
-        log.show_value(api.config, log.Level.DEBUG, 'PostWeb', post_web)
-        log.show_value(api.config, log.Level.DEBUG, 'PostMoney', post_money)
-        log.show_value(api.config, log.Level.DEBUG, 'ListDate', list_date)
-        log.show_value(api.config, log.Level.DEBUG,
+        log.show_value(api.config, log.level.DEBUG, 'PostTitle', post_title)
+        log.show_value(api.config, log.level.DEBUG, 'PostAID', post_aid)
+        log.show_value(api.config, log.level.DEBUG, 'PostWeb', post_web)
+        log.show_value(api.config, log.level.DEBUG, 'PostMoney', post_money)
+        log.show_value(api.config, log.level.DEBUG, 'ListDate', list_date)
+        log.show_value(api.config, log.level.DEBUG,
                        'PushNumber', push_number)
 
         if lock_post:
@@ -313,212 +321,34 @@ def get_post(
         )
         return post
 
-    api.Unconfirmed = False
+    origin_post, has_control_code = _api_util.get_content(api)
 
-    def is_unconfirmed_handler():
-        api.Unconfirmed = True
+    if origin_post is None:
+        post = data_type.PostInfo(
+            board=board,
+            aid=post_aid,
+            index=post_index,
+            author=post_author,
+            title=post_title,
+            web_url=post_web,
+            money=post_money,
+            list_date=list_date,
+            control_code=has_control_code,
+            format_check=False,
+            push_number=push_number,
+            unconfirmed=api.Unconfirmed,
+        )
+        return post
 
-    cmd = command.Enter * 2
-    target_list = [
-        # 待證實文章
-        connect_core.TargetUnit(
-            i18n.UnconfirmedPost,
-            '本篇文章內容經站方授權之板務管理人員判斷有尚待證實之處',
-            response=' ',
-            handler=is_unconfirmed_handler
-        ),
-        connect_core.TargetUnit(
-            [
-                i18n.BrowsePost,
-                i18n.Done,
-            ],
-            screens.Target.PostEnd,
-            break_detect=True,
-            log_level=log.Level.DEBUG
-        ),
-        connect_core.TargetUnit(
-            [
-                i18n.BrowsePost,
-            ],
-            screens.Target.InPost,
-            break_detect=True,
-            log_level=log.Level.DEBUG
-        ),
-        connect_core.TargetUnit(
-            [
-                i18n.PostNoContent,
-            ],
-            screens.Target.PostNoContent,
-            break_detect=True,
-            log_level=log.Level.DEBUG
-        ),
-        # 動畫文章
-        connect_core.TargetUnit(
-            [
-                i18n.AnimationPost,
-            ],
-            screens.Target.Animation,
-            response=command.GoMainMenu_TypeQ,
-            break_detect_after_send=True
-        ),
-    ]
-
-    line_from_pattern = re.compile('[\d]+~[\d]+')
+    # print('=' * 20)
+    # print()
+    # print('=' * 20)
 
     content_start = '───────────────────────────────────────'
     content_end = []
     content_end.append('--\n※ 發信站: 批踢踢實業坊(ptt.cc)')
     content_end.append('--\n※ 發信站: 批踢踢兔(ptt2.cc)')
     content_end.append('--\n※ 發信站: 新批踢踢(ptt2.twbbs.org.tw)')
-
-    # '※ 發信站: 批踢踢實業坊(ptt.cc)'
-
-    has_control_code = False
-    control_code_mode = False
-    push_start = False
-    content_start_exist = False
-    content_start_jump = False
-    content_start_jump_set = False
-
-    first_page = True
-    origin_post = []
-    stop_dict = dict()
-
-    while True:
-        index = api.connect_core.send(cmd, target_list)
-
-        if index == 3 or index == 4:
-            post = data_type.PostInfo(
-                board=board,
-                aid=post_aid,
-                index=post_index,
-                author=post_author,
-                title=post_title,
-                web_url=post_web,
-                money=post_money,
-                list_date=list_date,
-                control_code=has_control_code,
-                format_check=False,
-                push_number=push_number,
-                unconfirmed=api.Unconfirmed,
-            )
-            return post
-
-        last_screen = api.connect_core.get_screen_queue()[-1]
-        lines = last_screen.split('\n')
-        last_line = lines[-1]
-        lines.pop()
-        last_screen = '\n'.join(lines)
-
-        if content_start in last_screen and not content_start_exist:
-            content_start_exist = True
-
-        if content_start_exist:
-            if not content_start_jump_set:
-                if content_start not in last_screen:
-                    content_start_jump = True
-                    content_start_jump_set = True
-            else:
-                content_start_jump = False
-
-        pattern_result = line_from_pattern.search(last_line)
-        if pattern_result is None:
-            control_code_mode = True
-            has_control_code = True
-        else:
-            last_read_line_list = pattern_result.group(0).split('~')
-            last_read_line_a_temp = int(last_read_line_list[0])
-            last_read_line_b_temp = int(last_read_line_list[1])
-            if control_code_mode:
-                last_read_line_a = last_read_line_a_temp - 1
-                last_read_line_b = last_read_line_b_temp - 1
-            control_code_mode = False
-
-        if first_page:
-            first_page = False
-            origin_post.append(last_screen)
-        else:
-            # print(LastScreen)
-            # print(f'LastReadLineATemp [{LastReadLineATemp}]')
-            # print(f'LastReadLineBTemp [{LastReadLineBTemp}]')
-            # print(f'Dis [{23 - (LastReadLineBTemp - LastReadLineATemp)}]')
-            # print(f'ContentStartJump {ContentStartJump}')
-            # print(f'GetLineB {LastReadLineBTemp - LastReadLineB}')
-            # print(f'GetLineA {LastReadLineATemp - LastReadLineA}')
-            if not control_code_mode:
-
-                if last_read_line_a_temp in stop_dict:
-                    new_content_part = '\n'.join(
-                        lines[-stop_dict[last_read_line_a_temp]:])
-                else:
-                    get_line_b = last_read_line_b_temp - last_read_line_b
-                    if get_line_b > 0:
-                        # print('Type 1')
-                        # print(f'GetLineB [{GetLineB}]')
-                        new_content_part = '\n'.join(lines[-get_line_b:])
-                    else:
-                        # 駐足現象，LastReadLineB跟上一次相比並沒有改變
-                        if (last_read_line_b_temp + 1) not in stop_dict:
-                            stop_dict[last_read_line_b_temp + 1] = 1
-                        stop_dict[last_read_line_b_temp + 1] += 1
-
-                        get_line_a = last_read_line_a_temp - last_read_line_a
-
-                        if get_line_a > 0:
-                            new_content_part = '\n'.join(lines[-get_line_a:])
-                        else:
-                            new_content_part = '\n'.join(lines)
-
-            else:
-                new_content_part = lines[-1]
-
-            origin_post.append(new_content_part)
-            log.show_value(
-                api.config,
-                log.Level.DEBUG,
-                'NewContentPart',
-                new_content_part
-            )
-
-        if index == 1:
-            if content_start_jump and len(new_content_part) == 0:
-                # print(f'!!!GetLineB {GetLineB}')
-                get_line_b += 1
-                new_content_part = '\n'.join(lines[-get_line_b:])
-                # print(f'!!!NewContentPart {NewContentPart}')
-                origin_post.pop()
-                origin_post.append(new_content_part)
-            break
-
-        if not control_code_mode:
-            last_read_line_a = last_read_line_a_temp
-            last_read_line_b = last_read_line_b_temp
-
-        for EC in content_end:
-            if EC in last_screen:
-                push_start = True
-                break
-
-        if not push_start:
-            cmd = command.Down
-        else:
-            cmd = command.Right
-
-    # print(api.Unconfirmed)
-    origin_post = '\n'.join(origin_post)
-    # OriginPost = [line.strip() for line in OriginPost.split('\n')]
-    # OriginPost = '\n'.join(OriginPost)
-
-    log.show_value(
-        api.config,
-        log.Level.DEBUG,
-        'OriginPost',
-        origin_post
-    )
-
-    # print('=' * 20)
-    # print()
-    # print('=' * 20)
 
     post_author_pattern_new = re.compile('作者  (.+) 看板')
     post_author_pattern_old = re.compile('作者  (.+)')
@@ -545,7 +375,7 @@ def get_post(
                 board = board_temp
                 log.show_value(
                     api.config,
-                    log.Level.DEBUG,
+                    log.level.DEBUG,
                     i18n.Board,
                     board
                 )
@@ -558,7 +388,7 @@ def get_post(
         if pattern_result is None:
             log.show_value(
                 api.config,
-                log.Level.DEBUG,
+                log.level.DEBUG,
                 i18n.SubstandardPost,
                 i18n.Author
             )
@@ -589,7 +419,7 @@ def get_post(
 
     log.show_value(
         api.config,
-        log.Level.DEBUG,
+        log.level.DEBUG,
         i18n.Author,
         post_author
     )
@@ -601,7 +431,7 @@ def get_post(
     if pattern_result is None:
         log.show_value(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             i18n.SubstandardPost,
             i18n.Title
         )
@@ -631,7 +461,7 @@ def get_post(
 
     log.show_value(
         api.config,
-        log.Level.DEBUG,
+        log.level.DEBUG,
         i18n.Title,
         post_title
     )
@@ -642,7 +472,7 @@ def get_post(
     if pattern_result is None:
         log.show_value(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             i18n.SubstandardPost,
             i18n.Date
         )
@@ -672,7 +502,7 @@ def get_post(
 
     log.show_value(
         api.config,
-        log.Level.DEBUG,
+        log.level.DEBUG,
         i18n.Date,
         post_date
     )
@@ -706,7 +536,7 @@ def get_post(
     if content_fail:
         log.show_value(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             i18n.SubstandardPost,
             i18n.Content
         )
@@ -734,14 +564,14 @@ def get_post(
 
     log.show_value(
         api.config,
-        log.Level.DEBUG,
+        log.level.DEBUG,
         i18n.Content,
         post_content
     )
 
     info_lines = [
         line for line in origin_post_lines if line.startswith('※') or
-        line.startswith('◆')
+                                              line.startswith('◆')
     ]
 
     pattern = re.compile('[\d]+\.[\d]+\.[\d]+\.[\d]+')
@@ -749,7 +579,7 @@ def get_post(
     for line in reversed(info_lines):
         log.show_value(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             'IP Line',
             line
         )
@@ -778,7 +608,7 @@ def get_post(
             # print(f'=>[{LocationTemp}]')
             if ' ' not in location_temp and len(location_temp) > 0:
                 location = location_temp
-                log.show_value(api.config, log.Level.DEBUG,
+                log.show_value(api.config, log.level.DEBUG,
                                'Location', location)
             break
 
@@ -792,7 +622,7 @@ def get_post(
         if ip is None:
             log.show_value(
                 api.config,
-                log.Level.DEBUG,
+                log.level.DEBUG,
                 i18n.SubstandardPost,
                 'IP'
             )
@@ -817,7 +647,7 @@ def get_post(
                 unconfirmed=api.Unconfirmed,
             )
             return post
-    log.show_value(api.config, log.Level.DEBUG, 'IP', ip)
+    log.show_value(api.config, log.level.DEBUG, 'IP', ip)
 
     push_author_pattern = re.compile('[推|噓|→] [\w| ]+:')
     push_date_pattern = re.compile('[\d]+/[\d]+ [\d]+:[\d]+')
@@ -840,7 +670,7 @@ def get_post(
             # 不符合推文格式
             continue
         push_author = result.group(0)[2:-1].strip()
-        log.show_value(api.config, log.Level.DEBUG, [
+        log.show_value(api.config, log.level.DEBUG, [
             i18n.Push,
             i18n.ID,
         ],
@@ -851,7 +681,7 @@ def get_post(
         if result is None:
             continue
         push_date = result.group(0)
-        log.show_value(api.config, log.Level.DEBUG, [
+        log.show_value(api.config, log.level.DEBUG, [
             i18n.Push,
             i18n.Date,
         ],
@@ -862,12 +692,15 @@ def get_post(
         result = push_ip_pattern.search(line)
         if result is not None:
             push_ip = result.group(0)
-            log.show_value(api.config, log.Level.DEBUG, [
-                i18n.Push,
-                'IP',
-            ],
-                           push_ip
-                           )
+            log.show_value(
+                api.config,
+                log.level.DEBUG,
+                [
+                    i18n.Push,
+                    'IP',
+                ],
+                push_ip
+            )
 
         push_content = line[
                        line.find(push_author) + len(push_author):
@@ -890,7 +723,7 @@ def get_post(
                        ].strip()
         log.show_value(
             api.config,
-            log.Level.DEBUG, [
+            log.level.DEBUG, [
                 i18n.Push,
                 i18n.Content,
             ],

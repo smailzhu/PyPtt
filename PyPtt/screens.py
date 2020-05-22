@@ -131,9 +131,11 @@ class Target(object):
         '★ 這份文件是可播放的文字動畫，要開始播放嗎？'
     ]
 
+    CursorToGoodbye = MainMenu.copy()
+
 
 def show(config, screen_queue, function_name=None):
-    if config.log_level != log.Level.TRACE:
+    if config.log_level != log.level.TRACE:
         return
 
     if isinstance(screen_queue, list):
@@ -161,15 +163,6 @@ def show(config, screen_queue, function_name=None):
         print('錯誤在 ' + function_name + ' 函式發生')
     print('-' * 50)
 
-
-def is_match(screen: str, target):
-    if isinstance(target, str):
-        return target in screen
-    if isinstance(target, list):
-        for T in target:
-            if T not in screen:
-                return False
-        return True
 
 displayed = False
 
@@ -234,9 +227,9 @@ def vt100(ori_screen: str, no_color: bool = True) -> str:
         line_count = int(line_count)
         space_count = int(space_count)
         current_line = result[
-                      :result.find(
-                          f'[{line_count};{space_count}H'
-                      )].count('\n') + 1
+                       :result.find(
+                           f'[{line_count};{space_count}H'
+                       )].count('\n') + 1
         # if display:
         #     print(f'>{line_count}={space_count}<')
         #     print(f'>{current_line}<')
@@ -266,8 +259,8 @@ def vt100(ori_screen: str, no_color: bool = True) -> str:
 
                 if origin_line.count('=PTT=') > 2:
                     origin_line = origin_line[
-                                 :lib_util.findnth(origin_line, '=PTT=', 3)
-                                 ]
+                                  :lib_util.findnth(origin_line, '=PTT=', 3)
+                                  ]
 
                 # result_lines[OriginIndex] = result_lines[OriginIndex].replace(
                 #     origin_line,
@@ -275,11 +268,11 @@ def vt100(ori_screen: str, no_color: bool = True) -> str:
                 # )
 
                 origin_line = origin_line[
-                             len(f'=PTT=[{line_count};{space_count}H=PTT=[K'):
-                             ]
+                              len(f'=PTT=[{line_count};{space_count}H=PTT=[K'):
+                              ]
 
                 # log.showValue(
-                #     log.Level.INFO,
+                #     log.level.INFO,
                 #     'origin_line',
                 #     origin_line
                 # )
@@ -290,12 +283,12 @@ def vt100(ori_screen: str, no_color: bool = True) -> str:
         elif current_line == line_count:
             # print(f'!!!!!=PTT=[{line_count};{space_count}H')
             current_space = result[
-                           :result.find(
-                               f'=PTT=[{line_count};{space_count}H'
-                           )]
+                            :result.find(
+                                f'=PTT=[{line_count};{space_count}H'
+                            )]
             current_space = current_space[
-                           current_space.rfind('\n') + 1:
-                           ]
+                            current_space.rfind('\n') + 1:
+                            ]
             # if display:
             #     print(f'>>{current_space}<<')
             #     print(f'ori length>>{len(current_space)}<<')

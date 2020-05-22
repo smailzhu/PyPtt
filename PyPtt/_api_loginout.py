@@ -1,3 +1,5 @@
+import re
+
 try:
     from . import data_type
     from . import i18n
@@ -6,6 +8,7 @@ try:
     from . import screens
     from . import exceptions
     from . import command
+    from . import _api_util
 except ModuleNotFoundError:
     import data_type
     import i18n
@@ -14,10 +17,10 @@ except ModuleNotFoundError:
     import screens
     import exceptions
     import command
+    import _api_util
 
 
 def logout(api) -> None:
-
     cmd_list = []
     cmd_list.append(command.GoMainMenu)
     cmd_list.append('g')
@@ -40,7 +43,7 @@ def logout(api) -> None:
 
     log.log(
         api.config,
-        log.Level.INFO,
+        log.level.INFO,
         [
             i18n.Start,
             i18n.logout
@@ -59,7 +62,7 @@ def logout(api) -> None:
 
     log.show_value(
         api.config,
-        log.Level.INFO,
+        log.level.INFO,
         i18n.logout,
         i18n.Done
     )
@@ -70,7 +73,6 @@ def login(
         ptt_id,
         password,
         kick_other_login):
-
     if api._login_status:
         api.logout()
 
@@ -85,6 +87,20 @@ def login(
         if api.config.kick_other_login:
             return 'y' + command.Enter
         return 'n' + command.Enter
+
+    api._mailbox_full = False
+
+    def mailbox_full():
+        log.log(
+            api.config,
+            log.level.INFO,
+            i18n.MailBoxFull
+        )
+        api._mailbox_full = True
+
+    def register_processing(screen):
+        pattern = re.compile('[\d]+')
+        api.process_picks = int(pattern.search(screen).group(0))
 
     if len(password) > 8:
         password = password[:8]
@@ -101,7 +117,7 @@ def login(
 
     log.show_value(
         api.config,
-        log.Level.INFO,
+        log.level.INFO,
         [
             i18n.login,
             i18n.ID
@@ -111,15 +127,17 @@ def login(
 
     target_list = [
         connect_core.TargetUnit(
-            i18n.loginSuccess,
-            screens.Target.MainMenu,
+            # i18n.HasNewMailGotoMainMenu,
+            i18n.MailBox,
+            screens.Target.InMailBox,
+            # 加個進去 A 選單再出來的動作，讓畫面更新最底下一行
+            response=command.GoMainMenu + 'A' + command.Right + command.Left,
             break_detect=True
         ),
         connect_core.TargetUnit(
-            i18n.HasNewMailGotoMainMenu,
-            '你有新信件',
-            # 加個進去 A 選單再出來的動作，讓畫面更新最底下一行
-            response=command.GoMainMenu + 'A' + command.Right + command.Left,
+            i18n.loginSuccess,
+            screens.Target.MainMenu,
+            break_detect=True
         ),
         connect_core.TargetUnit(
             i18n.GoMainMenu,
@@ -149,11 +167,6 @@ def login(
             response='y' + command.Enter,
         ),
         connect_core.TargetUnit(
-            i18n.MailBoxFull,
-            '您保存信件數目',
-            response=command.GoMainMenu,
-        ),
-        connect_core.TargetUnit(
             i18n.PostNotFinish,
             '請選擇暫存檔 (0-9)[0]',
             response=command.Enter,
@@ -174,12 +187,35 @@ def login(
         ),
         connect_core.TargetUnit(
             i18n.AnyKeyContinue,
+            '◆ 您的註冊申請單尚在處理中',
+            response=command.Enter,
+            handler=register_processing
+        ),
+        connect_core.TargetUnit(
+            i18n.AnyKeyContinue,
             '任意鍵',
             response=command.Enter
         ),
         connect_core.TargetUnit(
             i18n.SigningUpdate,
             '正在更新與同步線上使用者及好友名單',
+        ),
+        connect_core.TargetUnit(
+            i18n.GoMainMenu,
+            '【分類看板】',
+            response=command.GoMainMenu,
+        ),
+        connect_core.TargetUnit(
+            i18n.ErrorLoginRichPeopleGoMainMenu,
+            [
+                '大富翁',
+                '排行榜',
+                '名次',
+                '代號',
+                '暱稱',
+                '數目'
+            ],
+            response=command.GoMainMenu,
         ),
     ]
 
@@ -198,45 +234,98 @@ def login(
         refresh=False,
         secret=True
     )
+    ori_screen = api.connect_core.get_screen_queue()[-1]
+    if index == 0:
+
+        current_capacity, max_capacity = _api_util.get_mailbox_capacity(api)
+
+        log.log(
+            api.config,
+            log.level.INFO,
+            i18n.HasNewMailGotoMainMenu
+        )
+
+        if current_capacity > max_capacity:
+            api._mailbox_full = True
+            log.log(
+                api.config,
+                log.level.INFO,
+                i18n.MailBoxFull)
+
+        if api._mailbox_full:
+            log.log(
+                api.config,
+                log.level.INFO,
+                i18n.UseMailboxAPIWillLogoutAfterExecution
+            )
+
+        target_list = [
+            connect_core.TargetUnit(
+                i18n.loginSuccess,
+                screens.Target.MainMenu,
+                break_detect=True
+            )
+        ]
+
+        cmd = command.GoMainMenu + 'A' + command.Right + command.Left
+
+        index = api.connect_core.send(
+            cmd,
+            target_list,
+            screen_timeout=api.config.screen_long_timeout,
+            secret=True
+        )
+        ori_screen = api.connect_core.get_screen_queue()[-1]
 
     if target_list[index].get_display_msg() != i18n.loginSuccess:
-        ori_screen = api.connect_core.get_screen_queue()[-1]
         print(ori_screen)
         raise exceptions.LoginError()
 
-    ori_screen = api.connect_core.get_screen_queue()[-1]
     if '> (' in ori_screen:
         api.cursor = data_type.Cursor.NEW
         log.log(
             api.config,
-            log.Level.DEBUG,
+            log.level.DEBUG,
             i18n.NewCursor
         )
     else:
         api.cursor = data_type.Cursor.OLD
         log.log(
             api.config,
-            log.Level.DEBUG,
-            i18n.OldCursor
-        )
+            log.level.DEBUG,
+            i18n.OldCursor)
 
     if api.cursor not in screens.Target.InBoardWithCursor:
         screens.Target.InBoardWithCursor.append('\n' + api.cursor)
 
-    api._unregistered_user = True
-    if '(T)alk' in ori_screen:
-        api._unregistered_user = False
-    if '(P)lay' in ori_screen:
-        api._unregistered_user = False
-    if '(N)amelist' in ori_screen:
-        api._unregistered_user = False
+    if len(screens.Target.MainMenu) == len(screens.Target.CursorToGoodbye):
+        if api.cursor == '>':
+            screens.Target.CursorToGoodbye.append('> (G)oodbye')
+        else:
+            screens.Target.CursorToGoodbye.append('●(G)oodbye')
 
-    if api._unregistered_user:
+    api.unregistered_user = True
+    if '(T)alk' in ori_screen:
+        api.unregistered_user = False
+    if '(P)lay' in ori_screen:
+        api.unregistered_user = False
+    if '(N)amelist' in ori_screen:
+        api.unregistered_user = False
+
+    if api.unregistered_user:
         # print(ori_screen)
         log.log(
             api.config,
-            log.Level.INFO,
-            i18n.UnregisteredUserCantUseAllAPI
+            log.level.INFO,
+            i18n.UnregisteredUserCantUseAllAPI)
+    api.registered_user = not api.unregistered_user
+
+    if api.process_picks != 0:
+        log.show_value(
+            api.config,
+            log.level.INFO,
+            i18n.PicksInRegister,
+            api.process_picks
         )
 
     api._login_status = True
